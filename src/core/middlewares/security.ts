@@ -47,6 +47,20 @@ export const authRateLimiter = rateLimit({
   },
 });
 
+export const commentRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many comment actions, please try again later',
+    data: null,
+    errors: [],
+    meta: null,
+  },
+});
+
 export const sanitizeMiddleware = mongoSanitizeMiddleware({ replaceWith: '_' });
 
 export const hppMiddleware = hpp();

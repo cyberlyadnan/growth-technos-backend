@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
@@ -33,6 +34,15 @@ export function createApp(): Application {
   app.use(cookieParser());
   app.use(sanitizeMiddleware);
   app.use(hppMiddleware);
+
+  app.use(
+    '/uploads',
+    express.static(path.join(process.cwd(), 'uploads'), {
+      maxAge: env.NODE_ENV === 'production' ? '7d' : 0,
+      etag: true,
+      lastModified: true,
+    }),
+  );
 
   morgan.token('request-id', (req) => (req as express.Request).requestId ?? '-');
   app.use(

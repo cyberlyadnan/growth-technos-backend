@@ -21,3 +21,7 @@ process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = '1000';
 process.env.LOG_LEVEL = 'error';
 process.env.SWAGGER_ENABLED = 'false';
 process.env.BCRYPT_SALT_ROUNDS = '10';
+process.env.STORAGE_PROVIDER = 'local';
+process.env.BLOG_UPLOAD_DIR = 'uploads/test-blogs';
+process.env.BLOG_UPLOAD_URL_PREFIX = '/uploads/test-blogs';
+process.env.BLOG_MAX_UPLOAD_MB = '5';

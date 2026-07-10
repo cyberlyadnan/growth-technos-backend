@@ -1,11 +1,12 @@
 import { ErrorRequestHandler, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { ZodError } from 'zod';
 import mongoose from 'mongoose';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { AppError, ErrorCode } from '@core/errors';
 import { sendError } from '@core/response';
 import { logger, loggers } from '@core/logger';
-import { isProduction } from '@core/config';
+import { env, isProduction } from '@core/config';
 
 export const errorHandler: ErrorRequestHandler = (
   error: Error,
@@ -19,6 +20,21 @@ export const errorHandler: ErrorRequestHandler = (
       logger.error(error.message, { stack: error.stack, code: error.code });
     }
     sendError(res, error.message, error.statusCode, error.errors);
+    return;
+  }
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      sendError(res, `File too large. Maximum size is ${env.BLOG_MAX_UPLOAD_MB}MB`, 400);
+      return;
+    }
+
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      sendError(res, 'Too many files uploaded', 400);
+      return;
+    }
+
+    sendError(res, error.message, 400);
     return;
   }
 

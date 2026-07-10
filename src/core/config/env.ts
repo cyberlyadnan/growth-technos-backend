@@ -62,6 +62,11 @@ const envSchema = z.object({
     .default(true),
 
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
+
+  STORAGE_PROVIDER: z.enum(['local', 's3', 'firebase']).default('local'),
+  BLOG_UPLOAD_DIR: z.string().default('uploads/blogs'),
+  BLOG_UPLOAD_URL_PREFIX: z.string().default('/uploads/blogs'),
+  BLOG_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;
