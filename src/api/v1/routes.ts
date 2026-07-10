@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import { authRoutes } from '@modules/auth';
+import { userRoutes } from '@modules/users';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
-
-// Future module routes will be mounted here:
-// router.use('/users', userRoutes);
+router.use('/users', userRoutes);
 // router.use('/blogs', blogRoutes);
 // router.use('/leads', leadRoutes);
 // router.use('/crm', crmRoutes);
