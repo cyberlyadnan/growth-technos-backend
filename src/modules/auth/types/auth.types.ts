@@ -1,9 +1,10 @@
-import { UserRole } from '@core/constants';
+import { UserRole, UserStatus } from '@core/constants';
 
 export interface AuthTokensResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: string;
+  refreshExpiresIn: string;
 }
 
 export interface AuthUserResponse {
@@ -14,8 +15,13 @@ export interface AuthUserResponse {
   fullName: string;
   role: UserRole;
   permissions: string[];
+  status: UserStatus;
   avatar?: string;
+  phone?: string;
   emailVerified: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginResponse {
@@ -26,4 +32,19 @@ export interface LoginResponse {
 export interface SessionContext {
   ip?: string;
   userAgent?: string;
+  rememberMe?: boolean;
+}
+
+export interface SessionValidationResponse {
+  authenticated: true;
+  user: AuthUserResponse;
+  session: {
+    accessTokenExpiresAt: string | null;
+  };
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  /** Included in development when SMTP is not configured */
+  resetUrl?: string;
 }

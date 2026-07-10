@@ -1,0 +1,39 @@
+import { Schema, model, Document, Types } from 'mongoose';
+
+export interface IPasswordResetToken extends Document {
+  id: string;
+  userId: Types.ObjectId;
+  tokenHash: string;
+  expiresAt: Date;
+  usedAt?: Date;
+  createdAt: Date;
+}
+
+const passwordResetTokenSchema = new Schema<IPasswordResetToken>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    tokenHash: { type: String, required: true, unique: true },
+    expiresAt: { type: Date, required: true, index: true },
+    usedAt: { type: Date },
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false },
+    toJSON: {
+      virtuals: true,
+      transform(_doc, ret: Record<string, unknown>) {
+        ret.id = (ret._id as { toString(): string }).toString();
+        delete ret._id;
+        delete ret.__v;
+        delete ret.tokenHash;
+        return ret;
+      },
+    },
+  },
+);
+
+passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+export const PasswordResetToken = model<IPasswordResetToken>(
+  'PasswordResetToken',
+  passwordResetTokenSchema,
+);

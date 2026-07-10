@@ -8,18 +8,22 @@ export function generateAccessToken(payload: Omit<JwtPayload, 'type' | 'iat' | '
   });
 }
 
-export function generateRefreshToken(payload: Omit<JwtPayload, 'type' | 'iat' | 'exp'>): string {
+export function generateRefreshToken(
+  payload: Omit<JwtPayload, 'type' | 'iat' | 'exp'>,
+  expiresIn?: string,
+): string {
   return jwt.sign({ ...payload, type: 'refresh' }, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    expiresIn: (expiresIn ?? env.JWT_REFRESH_EXPIRES_IN) as jwt.SignOptions['expiresIn'],
   });
 }
 
 export function generateTokenPair(
   payload: Omit<JwtPayload, 'type' | 'iat' | 'exp'>,
+  options?: { refreshExpiresIn?: string },
 ): TokenPair {
   return {
     accessToken: generateAccessToken(payload),
-    refreshToken: generateRefreshToken(payload),
+    refreshToken: generateRefreshToken(payload, options?.refreshExpiresIn),
   };
 }
 

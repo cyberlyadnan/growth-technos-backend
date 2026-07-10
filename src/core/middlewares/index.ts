@@ -11,4 +11,4 @@ export {
 } from './security';
 export { mongoSanitizeMiddleware } from './mongoSanitize';
 export { validate } from './validate';
-export { authenticate, optionalAuthenticate, authorize, authorizeRoles } from './authenticate';
+export { authenticate, optionalAuthenticate, authorize, authorizeRoles, requireAdmin, guestOnly } from './authenticate';

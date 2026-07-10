@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '@core/config';
+import { ADMIN_ROLES } from '@core/constants';
 import { AuthenticationError, AuthorizationError } from '@core/errors';
 import { JwtPayload } from '@core/types';
 import { loggers } from '@core/logger';
@@ -116,3 +117,32 @@ export const authorizeRoles =
 
     next();
   };
+
+/** Restricts access to authenticated admin users (extensible for future roles). */
+export const requireAdmin = authorizeRoles(...ADMIN_ROLES);
+
+/**
+ * Guest-only routes (login, forgot password).
+ * Allows access when unauthenticated or when the access token is invalid/expired.
+ */
+export const guestOnly = (req: Request, _res: Response, next: NextFunction): void => {
+  const token = extractToken(req);
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
+    if (decoded.type === 'access') {
+      next(new AuthorizationError('You are already signed in'));
+      return;
+    }
+  } catch {
+    // Expired or invalid token — allow guest route access
+  }
+
+  next();
+};
+
+export { extractToken };

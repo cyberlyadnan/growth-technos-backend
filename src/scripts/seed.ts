@@ -36,14 +36,14 @@ async function seed(): Promise<void> {
       lastName: 'Admin',
       email: adminEmail,
       password: hashedPassword,
-      role: UserRole.SUPER_ADMIN,
+      role: UserRole.ADMIN,
       permissions: Object.values(Permission),
       status: UserStatus.ACTIVE,
       emailVerified: true,
     });
-    logger.info('Super admin created', { email: adminEmail });
+    logger.info('Admin user created', { email: adminEmail });
   } else {
-    logger.info('Super admin already exists', { email: adminEmail });
+    logger.info('Admin user already exists', { email: adminEmail });
   }
 
   await disconnectDatabase();

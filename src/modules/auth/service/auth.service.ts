@@ -3,6 +3,7 @@ import { DEFAULT_ROLE_PERMISSIONS, UserRole, UserStatus } from '@core/constants'
 import {
   AuthenticationError,
   AuthorizationError,
+  BadRequestError,
   ConflictError,
   NotFoundError,
   TokenInvalidError,
@@ -10,16 +11,31 @@ import {
 import { env } from '@core/config';
 import { generateTokenPair, verifyRefreshToken } from '@core/utils/jwt';
 import { hashPassword, comparePassword } from '@core/utils/password';
+import { generateSecureToken, hashToken } from '@core/utils/tokenHash';
+import { durationToExpiryDate } from '@core/utils/duration';
+import { mailService } from '@core/mail/mail.service';
+import { buildPasswordResetEmail } from '@core/mail/templates/password-reset.template';
 import { loggers } from '@core/logger';
 import { userRepository } from '@modules/users/repository/user.repository';
 import { IUser } from '@modules/users/model/user.model';
 import { refreshTokenRepository } from '../repository/refreshToken.repository';
+import { passwordResetTokenRepository } from '../repository/passwordResetToken.repository';
 import {
   AuthUserResponse,
+  ForgotPasswordResponse,
   LoginResponse,
   SessionContext,
+  SessionValidationResponse,
 } from '../types/auth.types';
-import { ChangePasswordDto, LoginDto, RegisterDto } from '../dto/auth.dto';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResetPasswordDto,
+  UpdateAvatarDto,
+  UpdateProfileDto,
+} from '../dto/auth.dto';
 
 export class AuthService {
   private toAuthUser(user: IUser): AuthUserResponse {
@@ -31,8 +47,13 @@ export class AuthService {
       fullName: user.fullName,
       role: user.role,
       permissions: user.permissions,
+      status: user.status,
       avatar: user.avatar,
+      phone: user.phone,
       emailVerified: user.emailVerified,
+      lastLoginAt: user.lastLoginAt?.toISOString(),
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
   }
 
@@ -41,14 +62,18 @@ export class AuthService {
     return DEFAULT_ROLE_PERMISSIONS[role] ?? [];
   }
 
+  private getRefreshExpiresIn(rememberMe?: boolean): string {
+    return rememberMe ? env.JWT_REFRESH_REMEMBER_EXPIRES_IN : env.JWT_REFRESH_EXPIRES_IN;
+  }
+
   private async persistRefreshToken(
     userId: string,
     refreshToken: string,
     family: string,
     session: SessionContext,
   ): Promise<void> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    const refreshExpiresIn = this.getRefreshExpiresIn(session.rememberMe);
+    const expiresAt = durationToExpiryDate(refreshExpiresIn);
 
     await refreshTokenRepository.create({
       userId: userId as unknown as IUser['_id'],
@@ -66,7 +91,7 @@ export class AuthService {
       throw new ConflictError('Email already registered');
     }
 
-    const role = (dto.role as UserRole) ?? UserRole.VIEWER;
+    const role = UserRole.ADMIN;
     const hashedPassword = await hashPassword(dto.password);
 
     const user = await userRepository.create({
@@ -74,6 +99,7 @@ export class AuthService {
       lastName: dto.lastName,
       email: dto.email,
       password: hashedPassword,
+      phone: dto.phone || undefined,
       role,
       permissions: this.resolvePermissions(role),
       status: UserStatus.ACTIVE,
@@ -81,7 +107,7 @@ export class AuthService {
       ...(createdBy && { createdBy: createdBy as unknown as IUser['createdBy'] }),
     });
 
-    loggers.auth.info('User registered', { userId: user.id, email: user.email, role });
+    loggers.auth.info('Admin user registered', { userId: user.id, email: user.email });
 
     return this.issueTokens(user, { ip: undefined, userAgent: undefined });
   }
@@ -106,9 +132,9 @@ export class AuthService {
     }
 
     await userRepository.updateById(user.id, { lastLoginAt: new Date() });
-    loggers.auth.info('User logged in', { userId: user.id, ip: session.ip });
+    loggers.auth.info('User logged in', { userId: user.id, ip: session.ip, rememberMe: dto.rememberMe });
 
-    return this.issueTokens(user, session);
+    return this.issueTokens(user, { ...session, rememberMe: dto.rememberMe });
   }
 
   async refresh(refreshToken: string, session: SessionContext): Promise<LoginResponse> {
@@ -138,12 +164,16 @@ export class AuthService {
     await refreshTokenRepository.revokeToken(refreshToken);
 
     const permissions = this.resolvePermissions(user.role, user.permissions);
-    const tokens = generateTokenPair({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      permissions,
-    });
+    const refreshExpiresIn = this.getRefreshExpiresIn(session.rememberMe);
+    const tokens = generateTokenPair(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        permissions,
+      },
+      { refreshExpiresIn },
+    );
 
     await this.persistRefreshToken(user.id, tokens.refreshToken, storedToken.family, session);
 
@@ -155,6 +185,7 @@ export class AuthService {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresIn: env.JWT_ACCESS_EXPIRES_IN,
+        refreshExpiresIn,
       },
     };
   }
@@ -176,6 +207,23 @@ export class AuthService {
     return this.toAuthUser(user);
   }
 
+  async validateSession(
+    userId: string,
+    accessTokenExpiresAt?: number,
+  ): Promise<SessionValidationResponse> {
+    const user = await this.getMe(userId);
+
+    return {
+      authenticated: true,
+      user,
+      session: {
+        accessTokenExpiresAt: accessTokenExpiresAt
+          ? new Date(accessTokenExpiresAt * 1000).toISOString()
+          : null,
+      },
+    };
+  }
+
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await userRepository.findByIdWithPassword(userId);
     if (!user) throw new NotFoundError('User');
@@ -192,17 +240,124 @@ export class AuthService {
     });
 
     await refreshTokenRepository.revokeAllForUser(userId);
+    await passwordResetTokenRepository.deleteAllForUser(userId);
     loggers.auth.info('Password changed — all sessions revoked', { userId });
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<ForgotPasswordResponse> {
+    const genericMessage =
+      'If an account exists with that email, a password reset link has been sent.';
+
+    const user = await userRepository.findByEmail(dto.email);
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      loggers.auth.info('Forgot password requested for unknown/inactive account', {
+        email: dto.email,
+      });
+      return { message: genericMessage };
+    }
+
+    const rawToken = generateSecureToken();
+    const tokenHash = hashToken(rawToken);
+    const expiresAt = durationToExpiryDate(env.PASSWORD_RESET_TOKEN_EXPIRES_IN);
+
+    await passwordResetTokenRepository.create({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+
+    const resetUrl = `${env.CLIENT_URL}/admin/reset-password?token=${rawToken}`;
+    const emailContent = buildPasswordResetEmail({
+      name: user.firstName,
+      resetUrl,
+      expiresIn: env.PASSWORD_RESET_TOKEN_EXPIRES_IN,
+    });
+
+    await mailService.send({
+      to: user.email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+    });
+
+    loggers.auth.info('Password reset email dispatched', { userId: user.id });
+
+    const response: ForgotPasswordResponse = { message: genericMessage };
+
+    if (!mailService.isConfigured() && env.NODE_ENV === 'development') {
+      response.resetUrl = resetUrl;
+      loggers.auth.warn('SMTP not configured — reset URL logged for development', { resetUrl });
+    }
+
+    return response;
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    const tokenHash = hashToken(dto.token);
+    const resetRecord = await passwordResetTokenRepository.findValidByHash(tokenHash);
+
+    if (!resetRecord) {
+      throw new TokenInvalidError('Password reset link is invalid or has expired');
+    }
+
+    const user = await userRepository.findById(resetRecord.userId.toString());
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new BadRequestError('Unable to reset password for this account');
+    }
+
+    const hashedPassword = await hashPassword(dto.password);
+    await userRepository.updateById(user.id, {
+      password: hashedPassword,
+      passwordChangedAt: new Date(),
+    });
+
+    await passwordResetTokenRepository.markUsed(resetRecord.id);
+    await refreshTokenRepository.revokeAllForUser(user.id);
+
+    loggers.auth.info('Password reset completed', { userId: user.id });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<AuthUserResponse> {
+    const user = await userRepository.findById(userId);
+    if (!user) throw new NotFoundError('User');
+
+    const updated = await userRepository.updateById(userId, {
+      ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+      ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+      ...(dto.phone !== undefined && { phone: dto.phone || undefined }),
+      updatedBy: userId as unknown as IUser['updatedBy'],
+    });
+
+    if (!updated) throw new NotFoundError('User');
+    loggers.auth.info('Profile updated', { userId });
+
+    return this.toAuthUser(updated);
+  }
+
+  async updateAvatar(userId: string, dto: UpdateAvatarDto): Promise<AuthUserResponse> {
+    const updated = await userRepository.updateById(userId, {
+      avatar: dto.avatar,
+      updatedBy: userId as unknown as IUser['updatedBy'],
+    });
+
+    if (!updated) throw new NotFoundError('User');
+    loggers.auth.info('Profile avatar updated', { userId });
+
+    return this.toAuthUser(updated);
   }
 
   private async issueTokens(user: IUser, session: SessionContext): Promise<LoginResponse> {
     const permissions = this.resolvePermissions(user.role, user.permissions);
-    const tokens = generateTokenPair({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      permissions,
-    });
+    const refreshExpiresIn = this.getRefreshExpiresIn(session.rememberMe);
+    const tokens = generateTokenPair(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        permissions,
+      },
+      { refreshExpiresIn },
+    );
 
     const family = uuidv4();
     await this.persistRefreshToken(user.id, tokens.refreshToken, family, session);
@@ -213,6 +368,7 @@ export class AuthService {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresIn: env.JWT_ACCESS_EXPIRES_IN,
+        refreshExpiresIn,
       },
     };
   }

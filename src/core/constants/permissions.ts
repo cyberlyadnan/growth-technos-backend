@@ -41,26 +41,8 @@ export enum Permission {
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
   super_admin: Object.values(Permission),
-  admin: [
-    Permission.USERS_READ,
-    Permission.USERS_CREATE,
-    Permission.USERS_UPDATE,
-    Permission.CONTENT_READ,
-    Permission.CONTENT_CREATE,
-    Permission.CONTENT_UPDATE,
-    Permission.CONTENT_DELETE,
-    Permission.CONTENT_PUBLISH,
-    Permission.LEADS_READ,
-    Permission.LEADS_CREATE,
-    Permission.LEADS_UPDATE,
-    Permission.LEADS_ASSIGN,
-    Permission.MEDIA_READ,
-    Permission.MEDIA_UPLOAD,
-    Permission.MEDIA_DELETE,
-    Permission.SETTINGS_READ,
-    Permission.SETTINGS_MANAGE,
-    Permission.ANALYTICS_READ,
-  ],
+  // All admins have full access today. Permissions remain on the user record for future RBAC.
+  admin: Object.values(Permission),
   editor: [
     Permission.CONTENT_READ,
     Permission.CONTENT_CREATE,

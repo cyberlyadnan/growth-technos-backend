@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { env } from '@core/config';
+import { parseDurationToMs } from '@core/utils/duration';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -9,15 +10,28 @@ const COOKIE_OPTIONS = {
   path: '/',
 };
 
-export function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+export interface AuthCookieOptions {
+  rememberMe?: boolean;
+}
+
+export function setAuthCookies(
+  res: Response,
+  accessToken: string,
+  refreshToken: string,
+  options: AuthCookieOptions = {},
+): void {
+  const refreshDuration = options.rememberMe
+    ? env.JWT_REFRESH_REMEMBER_EXPIRES_IN
+    : env.JWT_REFRESH_EXPIRES_IN;
+
   res.cookie('accessToken', accessToken, {
     ...COOKIE_OPTIONS,
-    maxAge: 15 * 60 * 1000,
+    maxAge: parseDurationToMs(env.JWT_ACCESS_EXPIRES_IN, 15 * 60_000),
   });
 
   res.cookie('refreshToken', refreshToken, {
     ...COOKIE_OPTIONS,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: parseDurationToMs(refreshDuration),
     path: '/api/v1/auth',
   });
 }
