@@ -1,10 +1,10 @@
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import compression from 'compression';
 import { env } from '@core/config';
+import { mongoSanitizeMiddleware } from './mongoSanitize';
 
 export const helmetMiddleware = helmet({
   contentSecurityPolicy: env.NODE_ENV === 'production',
@@ -47,12 +47,7 @@ export const authRateLimiter = rateLimit({
   },
 });
 
-export const sanitizeMiddleware = mongoSanitize({
-  replaceWith: '_',
-  onSanitize: ({ req, key }) => {
-    console.warn(`Sanitized prohibited key: ${key} in request`, { url: req.url });
-  },
-});
+export const sanitizeMiddleware = mongoSanitizeMiddleware({ replaceWith: '_' });
 
 export const hppMiddleware = hpp();
 export const compressionMiddleware = compression();

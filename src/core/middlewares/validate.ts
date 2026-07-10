@@ -4,6 +4,24 @@ import { ValidationError } from '@core/errors';
 
 type RequestSource = 'body' | 'query' | 'params';
 
+function assignValidatedData(req: Request, source: RequestSource, data: unknown): void {
+  if (source === 'body') {
+    req.body = data;
+    return;
+  }
+
+  const target = req[source] as Record<string, unknown>;
+  const validated = data as Record<string, unknown>;
+
+  for (const key of Object.keys(target)) {
+    if (!(key in validated)) {
+      delete target[key];
+    }
+  }
+
+  Object.assign(target, validated);
+}
+
 export const validate =
   (schema: ZodSchema, source: RequestSource = 'body') =>
   (req: Request, _res: Response, next: NextFunction): void => {
@@ -18,6 +36,6 @@ export const validate =
       throw new ValidationError('Validation failed', errors);
     }
 
-    req[source] = result.data;
+    assignValidatedData(req, source, result.data);
     next();
   };

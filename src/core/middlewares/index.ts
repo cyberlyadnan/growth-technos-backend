@@ -9,5 +9,6 @@ export {
   hppMiddleware,
   compressionMiddleware,
 } from './security';
+export { mongoSanitizeMiddleware } from './mongoSanitize';
 export { validate } from './validate';
 export { authenticate, optionalAuthenticate, authorize, authorizeRoles } from './authenticate';
