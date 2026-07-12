@@ -28,8 +28,8 @@ async function main(): Promise<void> {
   const projectIds = await seedCaseStudyProjects();
   logger.info(`Seeded ${projectIds.size} case study projects`);
 
-  logger.info('Linking CMS relationships...');
-  await seedCmsRelationships(serviceIds, projectIds);
+  logger.info('Linking CMS relationships + industry hubs...');
+  await seedCmsRelationships(serviceIds, projectIds, industryIds, showcaseIds);
   logger.info('CMS relationship links updated');
 
   logger.info('CMS services & portfolio seed completed successfully', {

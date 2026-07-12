@@ -7,6 +7,25 @@ type CreateIndustryOptions = {
   slug?: string;
   metaTitle?: string;
   metaDescription?: string;
+  publicationStatus?: 'draft' | 'scheduled' | 'published' | 'archived';
+  shortDescription?: string;
+  description?: string;
+  isFeatured?: boolean;
+  displayOrder?: number;
+  includeInSitemap?: boolean;
+  robotsIndex?: boolean;
+  faqSchema?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  hero?: Record<string, unknown>;
+  problems?: Array<Record<string, unknown>>;
+  solutions?: Array<Record<string, unknown>>;
+  faqs?: Array<Record<string, unknown>>;
+  auditCta?: Record<string, unknown>;
+  finalCta?: Record<string, unknown>;
+  relatedServices?: string[];
+  relatedPortfolio?: string[];
+  relatedBlogs?: string[];
 };
 
 type CreateServiceOptions = {
@@ -52,8 +71,27 @@ export async function createTestIndustry(
     .send({
       name,
       slug,
+      description: options.description,
       metaTitle: options.metaTitle,
       metaDescription: options.metaDescription,
+      shortDescription: options.shortDescription,
+      isFeatured: options.isFeatured,
+      displayOrder: options.displayOrder,
+      includeInSitemap: options.includeInSitemap,
+      robotsIndex: options.robotsIndex,
+      faqSchema: options.faqSchema,
+      ogTitle: options.ogTitle,
+      ogDescription: options.ogDescription,
+      hero: options.hero,
+      problems: options.problems,
+      solutions: options.solutions,
+      faqs: options.faqs,
+      auditCta: options.auditCta,
+      finalCta: options.finalCta,
+      relatedServices: options.relatedServices,
+      relatedPortfolio: options.relatedPortfolio,
+      relatedBlogs: options.relatedBlogs,
+      publicationStatus: options.publicationStatus ?? 'published',
     })
     .expect(201);
 

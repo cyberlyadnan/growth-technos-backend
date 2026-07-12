@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Types } from 'mongoose';
 import { CmsPublicationStatus, PortfolioProjectType, ServiceKind } from '@core/constants/cms';
+import { logger } from '@core/logger';
 import { Industry } from '@modules/industries/model/industry.model';
 import { PortfolioProject } from '@modules/portfolio/model/portfolio.model';
 import { Service } from '@modules/services/model/service.model';
@@ -9,8 +10,11 @@ import {
   CMS_INDUSTRIES,
   FEATURED_PROJECT_SLUGS,
   HOMEPAGE_SERVICE_CATEGORY_SLUGS,
+  INDUSTRY_PORTFOLIO_LINKS,
+  INDUSTRY_SERVICE_LINKS,
   PORTFOLIO_SHOWCASE_ITEMS,
 } from './cms-industries.data';
+import { seedIndustryPages } from './industry-pages.seeder';
 
 export const SITE_URL = (process.env.APP_URL ?? 'https://growthtechnos.com').replace(/\/$/, '');
 
@@ -116,15 +120,16 @@ function toImageAsset(url?: string, alt?: string) {
   return { url, alt: alt ?? '' };
 }
 
-export async function upsertCmsIndustry(seed: {
-  slug: string;
-  name: string;
-  description?: string;
-  icon?: string;
-}): Promise<Types.ObjectId> {
+export async function upsertCmsIndustry(
+  seed: (typeof CMS_INDUSTRIES)[number],
+): Promise<Types.ObjectId> {
   const metaDescription =
+    seed.shortDescription?.slice(0, 160) ??
     seed.description?.slice(0, 160) ??
     `Services, case studies, and insights for ${seed.name.toLowerCase()} businesses.`;
+
+  const publishedAt =
+    seed.publicationStatus === CmsPublicationStatus.PUBLISHED ? new Date() : null;
 
   const doc = await Industry.findOneAndUpdate(
     { slug: seed.slug, isDeleted: { $ne: true } },
@@ -132,14 +137,41 @@ export async function upsertCmsIndustry(seed: {
       $set: {
         name: seed.name,
         description: seed.description,
+        shortDescription: seed.shortDescription,
+        fullDescription: seed.fullDescription,
         icon: seed.icon,
         isActive: true,
-        metaTitle: `${seed.name} Industry Hub | Growth Technos`,
+        isFeatured: seed.isFeatured,
+        displayOrder: seed.displayOrder,
+        publicationStatus: seed.publicationStatus,
+        publishedAt,
+        hero: seed.hero,
+        trustedBy: seed.trustedBy,
+        problems: seed.problems,
+        solutions: seed.solutions,
+        benefits: seed.benefits,
+        businessResults: seed.businessResults,
+        process: seed.process,
+        whyUs: seed.whyUs,
+        technology: seed.technology,
+        pricing: seed.pricing,
+        faqs: seed.faqs,
+        resources: seed.resources,
+        auditCta: seed.auditCta,
+        finalCta: seed.finalCta,
+        testimonials: seed.testimonials,
+        metaTitle: seed.metaTitle ?? `${seed.name} Industry Solutions | Growth Technos`,
         metaDescription,
+        metaKeywords: seed.metaKeywords,
         canonicalUrl: `${SITE_URL}/industries/${seed.slug}`,
         robotsIndex: true,
         robotsFollow: true,
         includeInSitemap: true,
+        ogTitle: seed.ogTitle,
+        ogDescription: seed.ogDescription,
+        twitterTitle: seed.twitterTitle,
+        twitterDescription: seed.twitterDescription,
+        faqSchema: seed.faqSchema,
       },
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },
@@ -172,11 +204,20 @@ export async function upsertPortfolioProject(
 }
 
 export async function seedCmsIndustries(): Promise<Map<string, Types.ObjectId>> {
-  const ids = new Map<string, Types.ObjectId>();
-  for (const industry of CMS_INDUSTRIES) {
-    ids.set(industry.slug, await upsertCmsIndustry(industry));
+  // Prefer the production industry-pages seeder (full sales content + media paths).
+  // Falls back to legacy CMS_INDUSTRIES only if the pages module is empty.
+  try {
+    return await seedIndustryPages();
+  } catch (error) {
+    logger.warn('Industry pages seed failed — falling back to legacy CMS_INDUSTRIES', {
+      error: error instanceof Error ? error.message : error,
+    });
+    const ids = new Map<string, Types.ObjectId>();
+    for (const industry of CMS_INDUSTRIES) {
+      ids.set(industry.slug, await upsertCmsIndustry(industry));
+    }
+    return ids;
   }
-  return ids;
 }
 
 export async function seedServicesCatalog(): Promise<Map<string, Types.ObjectId>> {
@@ -434,6 +475,8 @@ export async function seedCaseStudyProjects(): Promise<Map<string, Types.ObjectI
 export async function seedCmsRelationships(
   serviceIds: Map<string, Types.ObjectId>,
   caseStudyIds: Map<string, Types.ObjectId>,
+  industryIds?: Map<string, Types.ObjectId>,
+  showcaseIds?: Map<string, Types.ObjectId>,
 ): Promise<void> {
   const services = await Service.find({
     _id: { $in: Array.from(serviceIds.values()) },
@@ -469,5 +512,56 @@ export async function seedCmsRelationships(
       .map((item) => caseStudyIds.get(item)!);
 
     await PortfolioProject.updateOne({ _id: id }, { $set: { relatedPortfolio } });
+  }
+
+  if (!industryIds?.size) return;
+
+  const portfolioIds = new Map<string, Types.ObjectId>([
+    ...caseStudyIds.entries(),
+    ...(showcaseIds?.entries() ?? []),
+  ]);
+
+  for (const [industrySlug, industryId] of industryIds) {
+    const serviceSlugs = INDUSTRY_SERVICE_LINKS[industrySlug] ?? [];
+    const relatedServiceIds = serviceSlugs
+      .map((slug) => serviceIds.get(slug))
+      .filter((id): id is Types.ObjectId => Boolean(id));
+
+    const portfolioSlugs = INDUSTRY_PORTFOLIO_LINKS[industrySlug] ?? [];
+    const relatedPortfolioIds = portfolioSlugs
+      .map((slug) => portfolioIds.get(slug))
+      .filter((id): id is Types.ObjectId => Boolean(id));
+
+    await Industry.updateOne(
+      { _id: industryId },
+      {
+        $set: {
+          relatedServices: relatedServiceIds,
+          relatedPortfolio: relatedPortfolioIds,
+        },
+      },
+    );
+
+    for (const serviceId of relatedServiceIds) {
+      await Service.updateOne({ _id: serviceId }, { $addToSet: { industries: industryId } });
+      await Service.updateOne(
+        { _id: serviceId, $or: [{ primaryIndustry: null }, { primaryIndustry: { $exists: false } }] },
+        { $set: { primaryIndustry: industryId } },
+      );
+    }
+
+    for (const portfolioId of relatedPortfolioIds) {
+      await PortfolioProject.updateOne(
+        { _id: portfolioId },
+        { $addToSet: { industries: industryId } },
+      );
+      await PortfolioProject.updateOne(
+        {
+          _id: portfolioId,
+          $or: [{ primaryIndustry: null }, { primaryIndustry: { $exists: false } }],
+        },
+        { $set: { primaryIndustry: industryId } },
+      );
+    }
   }
 }
