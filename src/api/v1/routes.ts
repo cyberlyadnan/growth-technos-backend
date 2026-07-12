@@ -8,6 +8,7 @@ import { industryRoutes } from '@modules/industries';
 import { mediaRoutes } from '@modules/media';
 import { tagRoutes } from '@modules/tags';
 import { topicClusterRoutes } from '@modules/topic-clusters';
+import { leadRoutes } from '@modules/leads';
 import { portfolioRoutes } from '@modules/portfolio';
 import { serviceRoutes } from '@modules/services';
 import { userRoutes } from '@modules/users';
@@ -26,7 +27,7 @@ router.use('/industries', industryRoutes);
 router.use('/services', serviceRoutes);
 router.use('/portfolio', portfolioRoutes);
 router.use('/media', mediaRoutes);
-// router.use('/leads', leadRoutes);
+router.use('/leads', leadRoutes);
 // router.use('/crm', crmRoutes);
 
 router.get('/health', (_req, res) => {
