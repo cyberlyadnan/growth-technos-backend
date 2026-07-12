@@ -235,16 +235,22 @@ export class LeadService {
       };
     }
 
-    const form = await leadFormService.getEntityBySlugOrId({
-      formSlug: dto.formSlug,
-      formId: dto.formId,
-    });
-
-    if (form.honeypotEnabled === false && dto.website) {
-      // still ignore if somehow sent
+    let form: Awaited<ReturnType<typeof leadFormService.getEntityBySlugOrId>> | null = null;
+    try {
+      form = await leadFormService.getEntityBySlugOrId({
+        formSlug: dto.formSlug,
+        formId: dto.formId,
+      });
+    } catch (error) {
+      if (!(error instanceof NotFoundError)) throw error;
+      // Allow website captures even before CMS forms are seeded/published.
     }
 
-    validateAgainstFormFields(form.fields ?? [], dto);
+    if (form) {
+      validateAgainstFormFields(form.fields ?? [], dto);
+    } else if (!dto.email && !dto.phone && !dto.whatsapp) {
+      throw new BadRequestError('At least one of email, phone, or whatsapp is required');
+    }
 
     const lead = await Lead.create({
       name: dto.name,
@@ -264,7 +270,7 @@ export class LeadService {
       source: dto.source ?? LeadSource.WEBSITE,
       status: LeadStatus.NEW,
       campaignId: toObjectId(dto.campaignId) ?? null,
-      formId: form._id,
+      formId: form?._id ?? null,
       offerId: toObjectId(dto.offerId) ?? null,
       magnetId: toObjectId(dto.magnetId) ?? null,
       popupId: toObjectId(dto.popupId) ?? null,
@@ -283,7 +289,9 @@ export class LeadService {
       activityLog: [
         {
           type: LeadActivityType.CREATED,
-          message: 'Lead created from website submission',
+          message: form
+            ? 'Lead created from website submission'
+            : 'Lead created from website submission (no published form matched)',
           createdAt: new Date(),
         },
       ],
@@ -291,8 +299,8 @@ export class LeadService {
 
     const eventResult = await dispatchLeadSubmittedEvents({
       leadId: lead.id,
-      formId: form.id,
-      formSlug: form.slug,
+      formId: form?.id,
+      formSlug: form?.slug ?? dto.formSlug,
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
@@ -321,7 +329,7 @@ export class LeadService {
     }
 
     let successMessage: SubmitLeadResult['successMessage'] = null;
-    if (form.successMessageId) {
+    if (form?.successMessageId) {
       const msg = await SuccessMessage.findOne({
         _id: form.successMessageId,
         status: EntityStatus.PUBLISHED,
@@ -340,12 +348,12 @@ export class LeadService {
     }
 
     let redirect: SubmitLeadResult['redirect'] = null;
-    const rules = form.redirectRules;
+    const rules = form?.redirectRules;
     if (rules?.mode === 'path' && rules.path) {
       redirect = { mode: 'path', path: rules.path };
     } else if (rules?.mode === 'thank_you_page') {
       let slug = rules.thankYouSlug;
-      if (!slug && form.thankYouPageId) {
+      if (!slug && form?.thankYouPageId) {
         const page = await ThankYouPage.findById(form.thankYouPageId);
         slug = page?.slug;
       }
@@ -362,7 +370,7 @@ export class LeadService {
       analytics: {
         event: 'lead_submit',
         leadId: lead.id,
-        formSlug: form.slug,
+        formSlug: form?.slug ?? dto.formSlug,
         industry: lead.industry,
         serviceInterested: lead.serviceInterested,
         source: lead.source,

@@ -143,7 +143,7 @@ async function upsertForm(thankYouIds: Record<string, string>, successMessageId:
     { key: 'industry', label: 'Industry', type: FormFieldType.SELECT, required: false, options: ['Healthcare', 'Restaurants', 'Salons', 'Other'], order: 4 },
     { key: 'serviceInterested', label: 'Service interested in', type: FormFieldType.TEXT, required: false, options: [], order: 5 },
     { key: 'monthlyBudget', label: 'Monthly budget', type: FormFieldType.SELECT, required: false, options: ['₹5,000 - ₹10,000', '₹10,000 - ₹25,000', '₹25,000 - ₹50,000', '₹50,000+'], order: 6 },
-    { key: 'message', label: 'Message', type: FormFieldType.TEXTAREA, required: true, options: [], order: 7 },
+    { key: 'message', label: 'Message', type: FormFieldType.TEXTAREA, required: false, options: [], order: 7 },
     { key: 'consent', label: 'I agree to be contacted regarding my inquiry.', type: FormFieldType.CONSENT, required: true, options: [], order: 8 },
   ];
 
