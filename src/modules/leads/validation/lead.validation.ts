@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   DeviceType,
   FormFieldType,
+  LeadPriority,
   LeadSource,
   LeadStatus,
   LeadType,
@@ -133,15 +134,19 @@ export const submitLeadSchema = z
 export const listLeadsSchema = paginationQuerySchema.extend({
   status: z.nativeEnum(LeadStatus).optional(),
   source: z.nativeEnum(LeadSource).optional(),
+  priority: z.nativeEnum(LeadPriority).optional(),
   industry: z.string().max(120).trim().optional(),
+  serviceInterested: z.string().max(200).trim().optional(),
   formId: mongoIdSchema.optional(),
   campaignId: mongoIdSchema.optional(),
+  offerId: mongoIdSchema.optional(),
   includeTrash: z.coerce.boolean().optional(),
   trashOnly: z.coerce.boolean().optional(),
 });
 
 export const updateLeadSchema = z.object({
   status: z.nativeEnum(LeadStatus).optional(),
+  priority: z.nativeEnum(LeadPriority).optional(),
   notes: z.string().max(5000).trim().optional(),
   assignedTo: mongoIdSchema.nullable().optional(),
   score: z.number().min(0).max(100).nullable().optional(),
@@ -163,6 +168,10 @@ export const updateLeadSchema = z.object({
   industry: z.string().max(120).trim().optional(),
   serviceInterested: z.string().max(200).trim().optional(),
   message: z.string().max(5000).trim().optional(),
+});
+
+export const addLeadNoteSchema = z.object({
+  note: z.string().min(1).max(5000).trim(),
 });
 
 export const leadIdParamSchema = mongoIdParamSchema;

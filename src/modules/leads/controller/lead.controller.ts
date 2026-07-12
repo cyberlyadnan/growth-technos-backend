@@ -96,12 +96,32 @@ export class LeadController {
   });
 
   updateLead = asyncHandler(async (req: Request, res: Response) => {
-    const lead = await leadService.update(String(req.params.id), req.body, req.user!.id);
+    const lead = await leadService.update(
+      String(req.params.id),
+      req.body,
+      req.user!.id,
+      req.user!.email,
+    );
     sendSuccess(res, lead, 'Lead updated successfully');
   });
 
+  addLeadNote = asyncHandler(async (req: Request, res: Response) => {
+    const lead = await leadService.addNote(
+      String(req.params.id),
+      req.body,
+      req.user!.id,
+      req.user!.email,
+    );
+    sendSuccess(res, lead, 'Note added successfully');
+  });
+
+  restoreLead = asyncHandler(async (req: Request, res: Response) => {
+    const lead = await leadService.restore(String(req.params.id), req.user!.id, req.user!.email);
+    sendSuccess(res, lead, 'Lead restored successfully');
+  });
+
   deleteLead = asyncHandler(async (req: Request, res: Response) => {
-    await leadService.softDelete(String(req.params.id), req.user!.id);
+    await leadService.softDelete(String(req.params.id), req.user!.id, req.user!.email);
     sendNoContent(res);
   });
 }

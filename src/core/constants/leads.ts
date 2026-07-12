@@ -17,11 +17,30 @@ export enum LeadStatus {
   NEW = 'new',
   CONTACTED = 'contacted',
   QUALIFIED = 'qualified',
+  MEETING_SCHEDULED = 'meeting_scheduled',
   PROPOSAL = 'proposal',
   NEGOTIATION = 'negotiation',
   WON = 'won',
   LOST = 'lost',
   ARCHIVED = 'archived',
+}
+
+export enum LeadPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  URGENT = 'urgent',
+}
+
+export enum LeadActivityType {
+  CREATED = 'created',
+  STATUS_CHANGED = 'status_changed',
+  NOTE_ADDED = 'note_added',
+  PRIORITY_CHANGED = 'priority_changed',
+  ASSIGNED = 'assigned',
+  RESTORED = 'restored',
+  ARCHIVED = 'archived',
+  UPDATED = 'updated',
 }
 
 export enum LeadSource {

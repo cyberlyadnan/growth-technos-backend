@@ -1,6 +1,8 @@
 import {
   DeviceType,
   FormFieldType,
+  LeadActivityType,
+  LeadPriority,
   LeadSource,
   LeadStatus,
   LeadType,
@@ -100,7 +102,6 @@ export type SubmitLeadDto = {
   landingPage?: string;
   referrer?: string;
   utm?: IUtmFields;
-  /** Honeypot — must be empty if present */
   website?: string;
 };
 
@@ -112,6 +113,7 @@ export type CreateLeadAdminDto = SubmitLeadDto & {
 
 export type UpdateLeadDto = {
   status?: LeadStatus;
+  priority?: LeadPriority;
   notes?: string;
   assignedTo?: string | null;
   score?: number | null;
@@ -123,6 +125,20 @@ export type UpdateLeadDto = {
   industry?: string;
   serviceInterested?: string;
   message?: string;
+};
+
+export type AddLeadNoteDto = {
+  note: string;
+};
+
+export type LeadActivityResponse = {
+  id: string;
+  type: LeadActivityType;
+  message: string;
+  meta?: Record<string, unknown>;
+  createdBy?: string | null;
+  createdByName?: string;
+  createdAt: string;
 };
 
 export type LeadResponse = {
@@ -143,6 +159,7 @@ export type LeadResponse = {
   leadType: LeadType;
   source: LeadSource;
   status: LeadStatus;
+  priority: LeadPriority;
   campaignId?: string | null;
   formId?: string | null;
   offerId?: string | null;
@@ -161,6 +178,8 @@ export type LeadResponse = {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: string[];
   notes?: string;
+  activityLog: LeadActivityResponse[];
+  isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -176,7 +195,6 @@ export type SubmitLeadResult = {
     path?: string;
     thankYouSlug?: string;
   } | null;
-  /** Client-side conversion hook payload */
   analytics?: {
     event: 'lead_submit';
     leadId: string;
@@ -207,9 +225,12 @@ export type ListLeadsQuery = {
   search?: string;
   status?: LeadStatus;
   source?: LeadSource;
+  priority?: LeadPriority;
   industry?: string;
+  serviceInterested?: string;
   formId?: string;
   campaignId?: string;
+  offerId?: string;
   includeTrash?: boolean;
   trashOnly?: boolean;
 };

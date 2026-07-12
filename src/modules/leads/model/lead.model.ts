@@ -1,7 +1,9 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import {
   DeviceType,
+  LeadActivityType,
   LeadEventType,
+  LeadPriority,
   LeadSource,
   LeadStatus,
   LeadType,
@@ -19,6 +21,15 @@ import {
   scoreBreakdownSchema,
   utmFieldsSchema,
 } from '@core/schemas/lead-gen.schema';
+
+export interface ILeadActivityEntry {
+  type: LeadActivityType;
+  message: string;
+  meta?: Record<string, unknown>;
+  createdBy?: Types.ObjectId | null;
+  createdByName?: string;
+  createdAt: Date;
+}
 
 export interface ILead extends Document {
   id: string;
@@ -38,6 +49,7 @@ export interface ILead extends Document {
   leadType: LeadType;
   source: LeadSource;
   status: LeadStatus;
+  priority: LeadPriority;
   campaignId?: Types.ObjectId | null;
   formId?: Types.ObjectId | null;
   offerId?: Types.ObjectId | null;
@@ -56,6 +68,7 @@ export interface ILead extends Document {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: LeadEventType[];
   notes?: string;
+  activityLog: ILeadActivityEntry[];
   isDeleted: boolean;
   deletedAt?: Date;
   createdBy?: Types.ObjectId;
@@ -63,6 +76,22 @@ export interface ILead extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const leadActivitySchema = new Schema<ILeadActivityEntry>(
+  {
+    type: {
+      type: String,
+      enum: Object.values(LeadActivityType),
+      required: true,
+    },
+    message: { type: String, required: true, trim: true, maxlength: 1000 },
+    meta: { type: Schema.Types.Mixed },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    createdByName: { type: String, trim: true, maxlength: 160 },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+);
 
 const leadSchema = new Schema<ILead>(
   {
@@ -97,6 +126,12 @@ const leadSchema = new Schema<ILead>(
       default: LeadStatus.NEW,
       index: true,
     },
+    priority: {
+      type: String,
+      enum: Object.values(LeadPriority),
+      default: LeadPriority.MEDIUM,
+      index: true,
+    },
     campaignId: { type: Schema.Types.ObjectId, ref: 'Campaign', default: null, index: true },
     formId: { type: Schema.Types.ObjectId, ref: 'LeadForm', default: null, index: true },
     offerId: { type: Schema.Types.ObjectId, ref: 'Offer', default: null },
@@ -120,6 +155,7 @@ const leadSchema = new Schema<ILead>(
       },
     ],
     notes: { type: String, trim: true, maxlength: 5000 },
+    activityLog: { type: [leadActivitySchema], default: [] },
     ...auditSchemaFields,
   },
   baseSchemaOptions,

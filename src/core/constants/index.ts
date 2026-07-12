@@ -3,6 +3,8 @@ export { Permission, DEFAULT_ROLE_PERMISSIONS } from './permissions';
 export {
   LeadType,
   LeadStatus,
+  LeadPriority,
+  LeadActivityType,
   LeadSource,
   FormFieldType,
   CtaActionType,

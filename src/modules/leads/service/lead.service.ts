@@ -1,16 +1,24 @@
 import { Types } from 'mongoose';
-import { LeadSource, LeadStatus, LeadType } from '@core/constants/leads';
+import {
+  LeadActivityType,
+  LeadPriority,
+  LeadSource,
+  LeadStatus,
+  LeadType,
+} from '@core/constants/leads';
 import { BadRequestError, NotFoundError } from '@core/errors';
 import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { EntityStatus } from '@core/schemas/base.schema';
-import { ILead, Lead } from '../model/lead.model';
+import { ILead, ILeadActivityEntry, Lead } from '../model/lead.model';
 import { SuccessMessage } from '../model/success-message.model';
 import { ThankYouPage } from '../model/thank-you-page.model';
 import { dispatchLeadSubmittedEvents } from '../events';
 import { leadFormService } from './lead-form.service';
 import {
+  AddLeadNoteDto,
   ClientMeta,
+  LeadActivityResponse,
   LeadResponse,
   ListLeadsQuery,
   SubmitLeadDto,
@@ -32,6 +40,39 @@ function mapCustomFields(fields: Map<string, unknown> | Record<string, unknown> 
   return { ...fields };
 }
 
+function mapActivity(entry: ILeadActivityEntry & { _id?: Types.ObjectId }): LeadActivityResponse {
+  return {
+    id: entry._id?.toString?.() ?? new Types.ObjectId().toString(),
+    type: entry.type,
+    message: entry.message,
+    meta: entry.meta,
+    createdBy: entry.createdBy?.toString() ?? null,
+    createdByName: entry.createdByName,
+    createdAt: (entry.createdAt instanceof Date ? entry.createdAt : new Date(entry.createdAt)).toISOString(),
+  };
+}
+
+function pushActivity(
+  doc: ILead,
+  entry: {
+    type: LeadActivityType;
+    message: string;
+    meta?: Record<string, unknown>;
+    userId?: string;
+    userName?: string;
+  },
+) {
+  doc.activityLog = doc.activityLog ?? [];
+  doc.activityLog.push({
+    type: entry.type,
+    message: entry.message,
+    meta: entry.meta,
+    createdBy: entry.userId ? new Types.ObjectId(entry.userId) : null,
+    createdByName: entry.userName,
+    createdAt: new Date(),
+  });
+}
+
 function mapLead(doc: ILead): LeadResponse {
   return {
     id: doc.id,
@@ -51,6 +92,7 @@ function mapLead(doc: ILead): LeadResponse {
     leadType: doc.leadType,
     source: doc.source,
     status: doc.status,
+    priority: doc.priority ?? LeadPriority.MEDIUM,
     campaignId: doc.campaignId?.toString() ?? null,
     formId: doc.formId?.toString() ?? null,
     offerId: doc.offerId?.toString() ?? null,
@@ -69,6 +111,10 @@ function mapLead(doc: ILead): LeadResponse {
     scoreBreakdown: doc.scoreBreakdown ?? null,
     eventsTriggered: doc.eventsTriggered ?? [],
     notes: doc.notes,
+    activityLog: [...(doc.activityLog ?? [])]
+      .map((entry) => mapActivity(entry as ILeadActivityEntry & { _id?: Types.ObjectId }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    isDeleted: Boolean(doc.isDeleted),
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };
@@ -147,9 +193,12 @@ export class LeadService {
 
     if (query.status) filter.status = query.status;
     if (query.source) filter.source = query.source;
+    if (query.priority) filter.priority = query.priority;
     if (query.industry) filter.industry = query.industry;
+    if (query.serviceInterested) filter.serviceInterested = query.serviceInterested;
     if (query.formId) filter.formId = new Types.ObjectId(query.formId);
     if (query.campaignId) filter.campaignId = new Types.ObjectId(query.campaignId);
+    if (query.offerId) filter.offerId = new Types.ObjectId(query.offerId);
 
     const findQuery = Lead.find(filter).sort(sort).skip(skip).limit(limit);
     const countQuery = Lead.countDocuments(filter);
@@ -168,7 +217,7 @@ export class LeadService {
   }
 
   async getById(id: string): Promise<LeadResponse> {
-    const doc = await Lead.findById(id);
+    const doc = await Lead.findById(id).setOptions({ includeDeleted: true });
     if (!doc) throw new NotFoundError('Lead not found');
     return mapLead(doc);
   }
@@ -230,6 +279,14 @@ export class LeadService {
       eventsTriggered: [],
       score: null,
       scoreBreakdown: null,
+      priority: LeadPriority.MEDIUM,
+      activityLog: [
+        {
+          type: LeadActivityType.CREATED,
+          message: 'Lead created from website submission',
+          createdAt: new Date(),
+        },
+      ],
     });
 
     const eventResult = await dispatchLeadSubmittedEvents({
@@ -313,13 +370,60 @@ export class LeadService {
     };
   }
 
-  async update(id: string, dto: UpdateLeadDto, userId: string): Promise<LeadResponse> {
+  async update(
+    id: string,
+    dto: UpdateLeadDto,
+    userId: string,
+    userName?: string,
+  ): Promise<LeadResponse> {
     const doc = await Lead.findById(id);
     if (!doc) throw new NotFoundError('Lead not found');
 
-    if (dto.status !== undefined) doc.status = dto.status;
-    if (dto.notes !== undefined) doc.notes = dto.notes;
-    if (dto.assignedTo !== undefined) doc.assignedTo = toObjectId(dto.assignedTo) ?? null;
+    if (dto.status !== undefined && dto.status !== doc.status) {
+      const previous = doc.status;
+      doc.status = dto.status;
+      pushActivity(doc, {
+        type: LeadActivityType.STATUS_CHANGED,
+        message: `Status changed from ${previous} to ${dto.status}`,
+        meta: { from: previous, to: dto.status },
+        userId,
+        userName,
+      });
+    }
+
+    if (dto.priority !== undefined && dto.priority !== doc.priority) {
+      const previous = doc.priority;
+      doc.priority = dto.priority;
+      pushActivity(doc, {
+        type: LeadActivityType.PRIORITY_CHANGED,
+        message: `Priority changed from ${previous ?? 'medium'} to ${dto.priority}`,
+        meta: { from: previous, to: dto.priority },
+        userId,
+        userName,
+      });
+    }
+
+    if (dto.notes !== undefined) {
+      doc.notes = dto.notes;
+      pushActivity(doc, {
+        type: LeadActivityType.NOTE_ADDED,
+        message: dto.notes.slice(0, 200),
+        userId,
+        userName,
+      });
+    }
+
+    if (dto.assignedTo !== undefined) {
+      doc.assignedTo = toObjectId(dto.assignedTo) ?? null;
+      pushActivity(doc, {
+        type: LeadActivityType.ASSIGNED,
+        message: dto.assignedTo ? 'Lead assigned' : 'Lead unassigned',
+        meta: { assignedTo: dto.assignedTo },
+        userId,
+        userName,
+      });
+    }
+
     if (dto.score !== undefined) doc.score = dto.score;
     if (dto.scoreBreakdown !== undefined) doc.scoreBreakdown = dto.scoreBreakdown;
     if (dto.name !== undefined) doc.name = dto.name;
@@ -335,14 +439,61 @@ export class LeadService {
     return mapLead(doc);
   }
 
-  async softDelete(id: string, userId: string): Promise<void> {
+  async addNote(
+    id: string,
+    dto: AddLeadNoteDto,
+    userId: string,
+    userName?: string,
+  ): Promise<LeadResponse> {
+    const doc = await Lead.findById(id);
+    if (!doc) throw new NotFoundError('Lead not found');
+
+    const existing = doc.notes?.trim() ? `${doc.notes.trim()}\n\n` : '';
+    doc.notes = `${existing}${dto.note}`;
+    pushActivity(doc, {
+      type: LeadActivityType.NOTE_ADDED,
+      message: dto.note,
+      userId,
+      userName,
+    });
+    doc.updatedBy = new Types.ObjectId(userId);
+    await doc.save();
+    return mapLead(doc);
+  }
+
+  async softDelete(id: string, userId: string, userName?: string): Promise<void> {
     const doc = await Lead.findById(id);
     if (!doc) throw new NotFoundError('Lead not found');
     doc.isDeleted = true;
     doc.deletedAt = new Date();
     doc.status = LeadStatus.ARCHIVED;
+    pushActivity(doc, {
+      type: LeadActivityType.ARCHIVED,
+      message: 'Lead archived',
+      userId,
+      userName,
+    });
     doc.updatedBy = new Types.ObjectId(userId);
     await doc.save();
+  }
+
+  async restore(id: string, userId: string, userName?: string): Promise<LeadResponse> {
+    const doc = await Lead.findById(id).setOptions({ includeDeleted: true });
+    if (!doc) throw new NotFoundError('Lead not found');
+    doc.isDeleted = false;
+    doc.deletedAt = undefined;
+    if (doc.status === LeadStatus.ARCHIVED) {
+      doc.status = LeadStatus.NEW;
+    }
+    pushActivity(doc, {
+      type: LeadActivityType.RESTORED,
+      message: 'Lead restored from archive',
+      userId,
+      userName,
+    });
+    doc.updatedBy = new Types.ObjectId(userId);
+    await doc.save();
+    return mapLead(doc);
   }
 }
 

@@ -19,6 +19,7 @@ import {
   leadIdParamSchema,
   listLeadFormsSchema,
   listLeadsSchema,
+  addLeadNoteSchema,
   submitLeadSchema,
   updateLeadFormSchema,
   updateLeadSchema,
@@ -123,6 +124,19 @@ router.patch(
   validate(leadIdParamSchema, 'params'),
   validate(updateLeadSchema),
   leadController.updateLead,
+);
+router.post(
+  '/:id/notes',
+  authorize(Permission.LEADS_UPDATE),
+  validate(leadIdParamSchema, 'params'),
+  validate(addLeadNoteSchema),
+  leadController.addLeadNote,
+);
+router.post(
+  '/:id/restore',
+  authorize(Permission.LEADS_UPDATE),
+  validate(leadIdParamSchema, 'params'),
+  leadController.restoreLead,
 );
 router.delete(
   '/:id',
