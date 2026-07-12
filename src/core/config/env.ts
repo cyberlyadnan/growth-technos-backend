@@ -13,6 +13,8 @@ const envSchema = z.object({
     .string()
     .url()
     .transform((value) => value.replace(/\/+$/, '')),
+  /** Extra browser origins allowed for CORS (comma-separated), e.g. http://localhost:3000 */
+  CORS_ORIGINS: z.string().optional(),
 
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
 

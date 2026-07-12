@@ -11,8 +11,32 @@ export const helmetMiddleware = helmet({
   crossOriginEmbedderPolicy: false,
 });
 
+function getAllowedCorsOrigins(): string[] {
+  const extras =
+    env.CORS_ORIGINS?.split(',')
+      .map((value) => value.trim().replace(/\/+$/, ''))
+      .filter(Boolean) ?? [];
+
+  return [...new Set([env.CLIENT_URL, ...extras])];
+}
+
+const allowedCorsOrigins = getAllowedCorsOrigins();
+
 export const corsMiddleware = cors({
-  origin: [env.CLIENT_URL],
+  origin(origin, callback) {
+    // Non-browser clients (server-side fetch, curl) often send no Origin.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedCorsOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
