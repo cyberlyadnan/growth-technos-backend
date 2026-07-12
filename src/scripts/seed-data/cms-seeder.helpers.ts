@@ -216,6 +216,7 @@ export async function seedServicesCatalog(): Promise<Map<string, Types.ObjectId>
             included: raw.pricing.included ?? [],
           }
         : undefined,
+      showPricing: false,
       deliverables: raw.pricing?.included ?? [],
       timeline: raw.pricing?.timeline,
       publicationStatus: CmsPublicationStatus.PUBLISHED,
@@ -277,6 +278,7 @@ export async function seedServicesCatalog(): Promise<Map<string, Types.ObjectId>
               included: subRaw.pricing.included ?? [],
             }
           : raw.pricing,
+        showPricing: false,
         deliverables: subRaw.pricing?.included ?? raw.pricing?.included ?? [],
         timeline: subRaw.pricing?.timeline ?? raw.pricing?.timeline,
         publicationStatus: CmsPublicationStatus.PUBLISHED,

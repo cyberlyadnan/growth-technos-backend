@@ -59,6 +59,7 @@ export interface ServiceResponse {
   benefits: string[];
   process: Array<{ title: string; description?: string; order?: number }>;
   pricing?: { starting?: string; timeline?: string; included: string[]; note?: string };
+  showPricing: boolean;
   deliverables: string[];
   timeline?: string;
   cta?: { title?: string; description?: string; buttonLabel?: string; buttonUrl?: string };
@@ -145,6 +146,7 @@ export interface CreateServiceDto {
   benefits?: string[];
   process?: Array<{ title: string; description?: string; order?: number }>;
   pricing?: { starting?: string; timeline?: string; included?: string[]; note?: string };
+  showPricing?: boolean;
   deliverables?: string[];
   timeline?: string;
   cta?: { title?: string; description?: string; buttonLabel?: string; buttonUrl?: string };

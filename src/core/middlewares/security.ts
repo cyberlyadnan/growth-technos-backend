@@ -38,6 +38,8 @@ export const authRateLimiter = rateLimit({
   max: env.AUTH_RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
+  // Successful logins should not consume the attempt budget.
+  skipSuccessfulRequests: true,
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later',

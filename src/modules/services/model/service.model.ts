@@ -54,6 +54,7 @@ export interface IService extends Document, ISeoFields, IServiceSeoFields {
   benefits: string[];
   process: IProcessStep[];
   pricing?: IPricingInfo;
+  showPricing: boolean;
   deliverables: string[];
   timeline?: string;
   cta?: ICtaBlock;
@@ -120,6 +121,7 @@ const serviceSchema = new Schema<IService>(
     benefits: [{ type: String, trim: true }],
     process: [processStepSchema],
     pricing: { type: pricingInfoSchema, default: null },
+    showPricing: { type: Boolean, default: false },
     deliverables: [{ type: String, trim: true }],
     timeline: { type: String, trim: true, maxlength: 200 },
     cta: { type: ctaBlockSchema, default: null },

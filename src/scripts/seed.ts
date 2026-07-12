@@ -27,10 +27,10 @@ async function seed(): Promise<void> {
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@growthtechnos.com';
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123456';
+  const hashedPassword = await hashPassword(adminPassword);
 
   const existing = await User.findOne({ email: adminEmail });
   if (!existing) {
-    const hashedPassword = await hashPassword(adminPassword);
     await User.create({
       firstName: 'Super',
       lastName: 'Admin',
@@ -43,7 +43,13 @@ async function seed(): Promise<void> {
     });
     logger.info('Admin user created', { email: adminEmail });
   } else {
-    logger.info('Admin user already exists', { email: adminEmail });
+    existing.password = hashedPassword;
+    existing.status = UserStatus.ACTIVE;
+    existing.emailVerified = true;
+    existing.role = UserRole.ADMIN;
+    existing.permissions = Object.values(Permission);
+    await existing.save();
+    logger.info('Admin user updated (password reset)', { email: adminEmail });
   }
 
   await disconnectDatabase();

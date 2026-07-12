@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
     "seed:blogs": "ts-node -r tsconfig-paths/register src/scripts/seed-blogs.ts",
-    "seed:services-portfolio": "ts-node -r tsconfig-paths/register src/scripts/seed-services-portfolio.ts"
+    "seed:services-portfolio": "ts-node -r tsconfig-paths/register src/scripts/seed-services-portfolio.ts",
+    "migrate:hide-service-pricing": "ts-node -r tsconfig-paths/register src/scripts/hide-service-pricing.ts"
   },
   "keywords": [
     "growth-technos",

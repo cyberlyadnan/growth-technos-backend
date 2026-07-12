@@ -49,6 +49,7 @@ const serviceFieldsSchema = z
     benefits: z.array(z.string().trim()).optional(),
     process: z.array(cmsProcessStepSchema).optional(),
     pricing: cmsPricingSchema.optional().nullable(),
+    showPricing: z.boolean().optional(),
     deliverables: z.array(z.string().trim()).optional(),
     timeline: z.string().max(200).trim().optional(),
     cta: cmsCtaSchema.optional().nullable(),
