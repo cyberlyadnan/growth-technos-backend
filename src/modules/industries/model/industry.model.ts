@@ -4,8 +4,12 @@ import {
   baseSchemaOptions,
   applySoftDeleteQuery,
 } from '@core/schemas/base.schema';
+import {
+  IIndustrySeoFields,
+  industrySeoSchemaFields,
+} from '@core/schemas/industry-seo.schema';
 
-export interface IIndustry extends Document {
+export interface IIndustry extends Document, IIndustrySeoFields {
   id: string;
   name: string;
   slug: string;
@@ -27,6 +31,7 @@ const industrySchema = new Schema<IIndustry>(
     description: { type: String, trim: true, maxlength: 500 },
     icon: { type: String, trim: true },
     isActive: { type: Boolean, default: true, index: true },
+    ...industrySeoSchemaFields,
     ...auditSchemaFields,
   },
   baseSchemaOptions,

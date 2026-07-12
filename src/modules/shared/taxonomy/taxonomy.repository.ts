@@ -81,6 +81,19 @@ export class TaxonomyRepository<T extends TaxonomyDocument> {
     return query.exec();
   }
 
+  async findBySlug(slug: string, activeOnly = false): Promise<T | null> {
+    const filter: Record<string, unknown> = {
+      slug: slug.toLowerCase(),
+      isDeleted: { $ne: true },
+    };
+
+    if (activeOnly) {
+      filter.isActive = true;
+    }
+
+    return this.model.findOne(filter).exec();
+  }
+
   async slugExists(slug: string, excludeId?: string): Promise<boolean> {
     const filter: Record<string, unknown> = {
       slug: slug.toLowerCase(),

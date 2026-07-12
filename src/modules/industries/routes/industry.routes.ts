@@ -1,13 +1,42 @@
 import { Router } from 'express';
 import { Permission } from '@core/constants';
-import { authenticate, authorize, validate } from '@core/middlewares';
+import { authenticate, authorize, publicCacheMiddleware, validate } from '@core/middlewares';
+import { asyncHandler, sendSuccess } from '@core/response';
 import { createTaxonomyController } from '@modules/shared/taxonomy/taxonomy.controller';
-import { listTaxonomySchema, taxonomyIdParamSchema } from '@modules/shared/taxonomy/taxonomy.validation';
+import {
+  listPublicTaxonomySchema,
+  listTaxonomySchema,
+  taxonomyIdParamSchema,
+  taxonomySlugParamSchema,
+} from '@modules/shared/taxonomy/taxonomy.validation';
 import { industryService } from '../service/industry.service';
 import { createIndustrySchema, updateIndustrySchema } from '../validation/industry.validation';
 
 const router = Router();
 const controller = createTaxonomyController(industryService as never);
+
+const CMS_LIST_CACHE_SECONDS = 3600;
+
+router.get(
+  '/public',
+  publicCacheMiddleware(CMS_LIST_CACHE_SECONDS),
+  validate(listPublicTaxonomySchema, 'query'),
+  controller.listPublic,
+);
+router.get(
+  '/public/slug/:slug',
+  publicCacheMiddleware(CMS_LIST_CACHE_SECONDS),
+  validate(taxonomySlugParamSchema, 'params'),
+  controller.getPublicBySlug,
+);
+router.get(
+  '/public/feeds',
+  publicCacheMiddleware(CMS_LIST_CACHE_SECONDS),
+  asyncHandler(async (_req, res) => {
+    const feeds = await industryService.getPublicFeeds();
+    sendSuccess(res, feeds);
+  }),
+);
 
 router.use(authenticate);
 

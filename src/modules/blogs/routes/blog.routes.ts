@@ -36,6 +36,7 @@ router.get(
 );
 router.get(
   '/public/slug/:slug',
+  publicCacheMiddleware(),
   validate(blogSlugParamSchema, 'params'),
   blogController.getPublishedBySlug,
 );

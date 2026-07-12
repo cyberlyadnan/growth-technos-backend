@@ -23,6 +23,26 @@ export interface IndustryRef extends TaxonomyRef {
   icon?: string;
 }
 
+export interface ServiceRef {
+  id: string;
+  title: string;
+  slug: string;
+  kind: string;
+}
+
+export interface BlogRef {
+  id: string;
+  title: string;
+  slug: string;
+}
+
+export interface PortfolioRef {
+  id: string;
+  title: string;
+  slug: string;
+  projectType: string;
+}
+
 export interface BlogImageAsset {
   url: string;
   alt?: string;
@@ -66,6 +86,9 @@ export interface BlogResponse {
   viewCount: number;
   likeCount: number;
   tableOfContents: Array<{ id: string; text: string; level: number }>;
+  relatedServices: ServiceRef[];
+  relatedBlogs: BlogRef[];
+  relatedPortfolio: PortfolioRef[];
   duplicateOf?: string;
   lastAutosavedAt?: string;
   metaTitle?: string;
@@ -99,6 +122,7 @@ export interface ListBlogsQuery {
   author?: string;
   authorSlug?: string;
   industry?: string;
+  industrySlug?: string;
   topicCluster?: string;
   isFeatured?: boolean;
   isPinned?: boolean;
@@ -140,6 +164,9 @@ export interface CreateBlogDto {
   seoScore?: number;
   includeInSitemap?: boolean;
   includeInRss?: boolean;
+  relatedServices?: string[];
+  relatedBlogs?: string[];
+  relatedPortfolio?: string[];
 }
 
 export type UpdateBlogDto = Partial<CreateBlogDto>;

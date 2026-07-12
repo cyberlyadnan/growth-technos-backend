@@ -111,6 +111,7 @@ describe('Blog CMS — Public API', () => {
     const first = await request(app).get(`/api/v1/blogs/public/slug/${blog.slug}`).expect(200);
     const second = await request(app).get(`/api/v1/blogs/public/slug/${blog.slug}`).expect(200);
 
+    expect(first.headers['cache-control']).toContain('s-maxage=300');
     expect(first.body.data.content.html).toContain('Detailed article body');
     expect(second.body.data.viewCount).toBe(first.body.data.viewCount + 1);
   });

@@ -11,6 +11,7 @@ export interface TaxonomyResponse {
   name: string;
   slug: string;
   description?: string;
+  icon?: string;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: string;
@@ -53,7 +54,7 @@ export class TaxonomyService<T extends TaxonomyDocument> {
   ) {}
 
   private toResponse(entity: T): TaxonomyResponse {
-    return {
+    const response: TaxonomyResponse = {
       id: entity.id,
       name: entity.name,
       slug: entity.slug,
@@ -64,6 +65,12 @@ export class TaxonomyService<T extends TaxonomyDocument> {
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
     };
+
+    if ('icon' in entity && typeof entity.icon === 'string' && entity.icon) {
+      response.icon = entity.icon;
+    }
+
+    return response;
   }
 
   private async getOrThrow(id: string, includeDeleted = false): Promise<T> {
@@ -128,6 +135,14 @@ export class TaxonomyService<T extends TaxonomyDocument> {
 
   async getById(id: string): Promise<TaxonomyResponse> {
     const entity = await this.getOrThrow(id);
+    return this.toResponse(entity);
+  }
+
+  async getPublicBySlug(slug: string): Promise<TaxonomyResponse> {
+    const entity = await this.repository.findBySlug(slug.toLowerCase(), true);
+    if (!entity || !entity.isActive || entity.isDeleted) {
+      throw new NotFoundError(this.entityLabel);
+    }
     return this.toResponse(entity);
   }
 

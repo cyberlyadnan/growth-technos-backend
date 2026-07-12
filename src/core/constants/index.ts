@@ -10,5 +10,11 @@ export {
   CommentSortOrder,
   MediaStorageProvider,
 } from './blog';
+export {
+  CmsPublicationStatus,
+  ServiceKind,
+  PortfolioProjectType,
+  CmsContentFormat,
+} from './cms';
 export { ALLOWED_IMAGE_MIME_TYPES, IMAGE_MIME_EXTENSIONS } from './media';
 export type { AllowedImageMimeType } from './media';

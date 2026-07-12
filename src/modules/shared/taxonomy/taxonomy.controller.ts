@@ -20,6 +20,11 @@ export function createTaxonomyController(service: TaxonomyService<never>) {
       sendPaginated(res, result.items, result.meta);
     }),
 
+    getPublicBySlug: asyncHandler(async (req: Request, res: Response) => {
+      const item = await service.getPublicBySlug(String(req.params.slug));
+      sendSuccess(res, item);
+    }),
+
     getById: asyncHandler(async (req: Request, res: Response) => {
       const item = await service.getById(String(req.params.id));
       sendSuccess(res, item);

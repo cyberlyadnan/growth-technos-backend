@@ -17,7 +17,8 @@
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
-    "seed:blogs": "ts-node -r tsconfig-paths/register src/scripts/seed-blogs.ts"
+    "seed:blogs": "ts-node -r tsconfig-paths/register src/scripts/seed-blogs.ts",
+    "seed:services-portfolio": "ts-node -r tsconfig-paths/register src/scripts/seed-services-portfolio.ts"
   },
   "keywords": [
     "growth-technos",

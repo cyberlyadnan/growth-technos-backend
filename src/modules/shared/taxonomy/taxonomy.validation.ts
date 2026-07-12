@@ -21,3 +21,7 @@ export const listPublicTaxonomySchema = paginationQuerySchema.extend({
 });
 
 export const taxonomyIdParamSchema = mongoIdParamSchema;
+
+export const taxonomySlugParamSchema = z.object({
+  slug: z.string().min(1).max(120).trim().toLowerCase(),
+});

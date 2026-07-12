@@ -15,6 +15,18 @@ export const BLOG_POPULATE = [
   { path: 'author', select: 'name slug photo designation' },
   { path: 'topicCluster', select: 'name slug' },
   { path: 'industry', select: 'name slug icon' },
+  {
+    path: 'relatedServices',
+    select: 'title slug kind publicationStatus isDeleted',
+  },
+  {
+    path: 'relatedBlogs',
+    select: 'title slug publicationStatus isDeleted',
+  },
+  {
+    path: 'relatedPortfolio',
+    select: 'title slug projectType publicationStatus isDeleted',
+  },
 ];
 
 export interface FindBlogsOptions {

@@ -52,6 +52,9 @@ const blogFieldsSchema = z
     isTrending: z.boolean().optional(),
     allowComments: z.boolean().optional(),
     tableOfContents: tableOfContentsSchema.optional(),
+    relatedServices: z.array(mongoIdSchema).optional(),
+    relatedBlogs: z.array(mongoIdSchema).optional(),
+    relatedPortfolio: z.array(mongoIdSchema).optional(),
   })
   .merge(seoFieldsSchema.partial())
   .merge(articleSeoFieldsSchema);
@@ -86,6 +89,7 @@ export const listPublicBlogsSchema = paginationQuerySchema.extend({
   author: mongoIdSchema.optional(),
   authorSlug: z.string().min(1).max(120).trim().toLowerCase().optional(),
   industry: mongoIdSchema.optional(),
+  industrySlug: z.string().min(1).max(120).trim().toLowerCase().optional(),
   topicCluster: mongoIdSchema.optional(),
   isFeatured: z.coerce.boolean().optional(),
   isTrending: z.coerce.boolean().optional(),

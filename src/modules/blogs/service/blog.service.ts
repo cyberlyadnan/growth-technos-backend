@@ -12,9 +12,13 @@ import { calculateReadingTimeMinutes, stripHtml } from '@core/utils/reading-time
 import { calculateBlogSeoScore } from '@core/utils/blog-seo-score';
 import { sanitizeBlogHtml } from '@core/utils/sanitize-html';
 import { ensureUniqueSlug, slugify } from '@core/utils/slug';
+import { revalidateBlogContent } from '@core/revalidation/frontend-revalidation';
 import { Author } from '@modules/authors/model/author.model';
+import { Blog } from '@modules/blogs/model/blog.model';
 import { Category } from '@modules/categories/model/category.model';
 import { Industry } from '@modules/industries/model/industry.model';
+import { PortfolioProject } from '@modules/portfolio/model/portfolio.model';
+import { Service } from '@modules/services/model/service.model';
 import { Tag } from '@modules/tags/model/tag.model';
 import { TopicCluster } from '@modules/topic-clusters/model/topic-cluster.model';
 import { IBlog } from '../model/blog.model';
@@ -35,12 +39,17 @@ import {
 type PopulatedRef = {
   id?: string;
   _id?: { toString(): string };
-  name: string;
+  name?: string;
+  title?: string;
   slug: string;
+  kind?: string;
   color?: string;
   photo?: string;
   designation?: string;
   icon?: string;
+  projectType?: string;
+  publicationStatus?: string;
+  isDeleted?: boolean;
 };
 
 function refId(doc: PopulatedRef | undefined | null): string | undefined {
@@ -52,7 +61,7 @@ function mapTaxonomyRef(doc: PopulatedRef | undefined | null) {
   if (!doc) return undefined;
   return {
     id: refId(doc)!,
-    name: doc.name,
+    name: doc.name ?? doc.title ?? '',
     slug: doc.slug,
   };
 }
@@ -60,7 +69,7 @@ function mapTaxonomyRef(doc: PopulatedRef | undefined | null) {
 function mapTagRef(doc: PopulatedRef) {
   return {
     id: refId(doc)!,
-    name: doc.name,
+    name: doc.name ?? doc.title ?? '',
     slug: doc.slug,
     color: doc.color,
   };
@@ -70,7 +79,7 @@ function mapAuthorRef(doc: PopulatedRef | undefined | null) {
   if (!doc) return undefined;
   return {
     id: refId(doc)!,
-    name: doc.name,
+    name: doc.name ?? doc.title ?? '',
     slug: doc.slug,
     photo: doc.photo,
     designation: doc.designation,
@@ -81,9 +90,31 @@ function mapIndustryRef(doc: PopulatedRef | undefined | null) {
   if (!doc) return undefined;
   return {
     id: refId(doc)!,
-    name: doc.name,
+    name: doc.name ?? '',
     slug: doc.slug,
     icon: doc.icon,
+  };
+}
+
+function mapServiceRef(doc: PopulatedRef) {
+  return {
+    id: refId(doc)!,
+    title: doc.title ?? doc.name ?? '',
+    slug: doc.slug,
+    kind: doc.kind ?? 'category',
+  };
+}
+
+function mapBlogRef(doc: PopulatedRef) {
+  return { id: refId(doc)!, title: doc.title ?? doc.name ?? '', slug: doc.slug };
+}
+
+function mapPortfolioRef(doc: PopulatedRef) {
+  return {
+    id: refId(doc)!,
+    title: doc.title ?? doc.name ?? '',
+    slug: doc.slug,
+    projectType: doc.projectType ?? 'case_study',
   };
 }
 
@@ -135,8 +166,23 @@ export class BlogService {
     return doc._id.toString();
   }
 
+  private async resolveIndustryIdBySlug(slug?: string): Promise<string | undefined> {
+    if (!slug) return undefined;
+
+    const doc = await Industry.findOne({
+      slug: slug.toLowerCase(),
+      isDeleted: { $ne: true },
+      isActive: true,
+    })
+      .select('_id')
+      .lean();
+
+    if (!doc?._id) return this.noMatchObjectId;
+    return doc._id.toString();
+  }
+
   private async resolvePublicBlogFilters(query: ListBlogsQuery) {
-    const [category, tag, author] = await Promise.all([
+    const [category, tag, author, industry] = await Promise.all([
       query.category
         ? Promise.resolve(query.category)
         : this.resolveCategoryIdBySlug(query.categorySlug),
@@ -144,9 +190,12 @@ export class BlogService {
       query.author
         ? Promise.resolve(query.author)
         : this.resolveAuthorIdBySlug(query.authorSlug),
+      query.industry
+        ? Promise.resolve(query.industry)
+        : this.resolveIndustryIdBySlug(query.industrySlug),
     ]);
 
-    return { category, tag, author };
+    return { category, tag, author, industry };
   }
 
   private toBlogSummaryResponse(blog: IBlog): BlogResponse {
@@ -164,12 +213,30 @@ export class BlogService {
     };
   }
 
-  private toBlogResponse(blog: IBlog): BlogResponse {
+  private filterPublishedRelated(docs: PopulatedRef[]): PopulatedRef[] {
+    return docs.filter(
+      (doc) =>
+        doc?.slug &&
+        doc.publicationStatus === BlogPublicationStatus.PUBLISHED &&
+        !doc.isDeleted,
+    );
+  }
+
+  private toBlogResponse(blog: IBlog, publicOnly = false): BlogResponse {
     const category = blog.category as unknown as PopulatedRef | undefined;
     const tags = (blog.tags as unknown as PopulatedRef[]) ?? [];
     const author = blog.author as unknown as PopulatedRef;
     const topicCluster = blog.topicCluster as unknown as PopulatedRef | undefined;
     const industry = blog.industry as unknown as PopulatedRef | undefined;
+    let relatedServices = (blog.relatedServices as unknown as PopulatedRef[]) ?? [];
+    let relatedBlogs = (blog.relatedBlogs as unknown as PopulatedRef[]) ?? [];
+    let relatedPortfolio = (blog.relatedPortfolio as unknown as PopulatedRef[]) ?? [];
+
+    if (publicOnly) {
+      relatedServices = this.filterPublishedRelated(relatedServices);
+      relatedBlogs = this.filterPublishedRelated(relatedBlogs);
+      relatedPortfolio = this.filterPublishedRelated(relatedPortfolio);
+    }
 
     return {
       id: blog.id,
@@ -204,6 +271,9 @@ export class BlogService {
       viewCount: blog.viewCount,
       likeCount: blog.likeCount,
       tableOfContents: blog.tableOfContents ?? [],
+      relatedServices: relatedServices.map(mapServiceRef),
+      relatedBlogs: relatedBlogs.map(mapBlogRef),
+      relatedPortfolio: relatedPortfolio.map(mapPortfolioRef),
       duplicateOf: blog.duplicateOf?.toString(),
       lastAutosavedAt: blog.lastAutosavedAt?.toISOString(),
       metaTitle: blog.metaTitle,
@@ -243,6 +313,9 @@ export class BlogService {
     tags?: string[];
     topicCluster?: string | null;
     industry?: string | null;
+    relatedServices?: string[];
+    relatedBlogs?: string[];
+    relatedPortfolio?: string[];
   }): Promise<void> {
     if (dto.author) {
       const author = await Author.findById(dto.author).exec();
@@ -267,6 +340,36 @@ export class BlogService {
     if (dto.tags?.length) {
       const count = await Tag.countDocuments({ _id: { $in: dto.tags } });
       if (count !== dto.tags.length) throw new BadRequestError('One or more tags not found');
+    }
+
+    if (dto.relatedServices?.length) {
+      const serviceCount = await Service.countDocuments({
+        _id: { $in: dto.relatedServices },
+        isDeleted: { $ne: true },
+      });
+      if (serviceCount !== dto.relatedServices.length) {
+        throw new BadRequestError('One or more related services not found');
+      }
+    }
+
+    if (dto.relatedBlogs?.length) {
+      const blogCount = await Blog.countDocuments({
+        _id: { $in: dto.relatedBlogs },
+        isDeleted: { $ne: true },
+      });
+      if (blogCount !== dto.relatedBlogs.length) {
+        throw new BadRequestError('One or more related blogs not found');
+      }
+    }
+
+    if (dto.relatedPortfolio?.length) {
+      const portfolioCount = await PortfolioProject.countDocuments({
+        _id: { $in: dto.relatedPortfolio },
+        isDeleted: { $ne: true },
+      });
+      if (portfolioCount !== dto.relatedPortfolio.length) {
+        throw new BadRequestError('One or more related portfolio projects not found');
+      }
     }
   }
 
@@ -327,6 +430,15 @@ export class BlogService {
       ...(dto.seoScore !== undefined && { seoScore: dto.seoScore }),
       ...(dto.includeInSitemap !== undefined && { includeInSitemap: dto.includeInSitemap }),
       ...(dto.includeInRss !== undefined && { includeInRss: dto.includeInRss }),
+      ...(dto.relatedServices !== undefined && {
+        relatedServices: dto.relatedServices.map((id) => toObjectId(id)!),
+      }),
+      ...(dto.relatedBlogs !== undefined && {
+        relatedBlogs: dto.relatedBlogs.map((id) => toObjectId(id)!),
+      }),
+      ...(dto.relatedPortfolio !== undefined && {
+        relatedPortfolio: dto.relatedPortfolio.map((id) => toObjectId(id)!),
+      }),
       updatedBy: actorId,
     };
   }
@@ -405,7 +517,7 @@ export class BlogService {
     query: ListBlogsQuery,
   ): Promise<{ blogs: BlogResponse[]; meta: PaginationMeta }> {
     const { page, limit, skip, sort } = parsePaginationQuery(query);
-    const { category, tag, author } = await this.resolvePublicBlogFilters(query);
+    const { category, tag, author, industry } = await this.resolvePublicBlogFilters(query);
 
     const [blogs, total] = await Promise.all([
       blogRepository.findMany({
@@ -416,7 +528,7 @@ export class BlogService {
         category,
         tag,
         author,
-        industry: query.industry,
+        industry,
         topicCluster: query.topicCluster,
         isFeatured: query.isFeatured,
         isTrending: query.isTrending,
@@ -428,7 +540,7 @@ export class BlogService {
         category,
         tag,
         author,
-        industry: query.industry,
+        industry,
         topicCluster: query.topicCluster,
         isFeatured: query.isFeatured,
         isTrending: query.isTrending,
@@ -451,8 +563,8 @@ export class BlogService {
     const blog = await blogRepository.findBySlug(slug, true);
     if (!blog) throw new NotFoundError('Blog');
 
-    await blogRepository.incrementViewCount(blog.id);
-    return this.toBlogResponse(blog);
+    void blogRepository.incrementViewCount(blog.id);
+    return this.toBlogResponse(blog, true);
   }
 
   async getPublicFeeds(): Promise<BlogPublicFeedsResponse> {
@@ -517,6 +629,9 @@ export class BlogService {
       isTrending: dto.isTrending ?? false,
       allowComments: dto.allowComments ?? true,
       tableOfContents: dto.tableOfContents ?? [],
+      relatedServices: (dto.relatedServices ?? []).map((id) => toObjectId(id)!),
+      relatedBlogs: (dto.relatedBlogs ?? []).map((id) => toObjectId(id)!),
+      relatedPortfolio: (dto.relatedPortfolio ?? []).map((id) => toObjectId(id)!),
       seoScore: this.resolveSeoScore(dto),
       createdBy: toObjectId(actorId),
     } as Partial<IBlog>);
@@ -549,6 +664,9 @@ export class BlogService {
     if (!updated) throw new NotFoundError('Blog');
 
     loggers.admin.info('Blog updated', { blogId: id, actorId });
+    if (updated.publicationStatus === BlogPublicationStatus.PUBLISHED) {
+      revalidateBlogContent(updated.slug);
+    }
     return this.toBlogResponse(updated);
   }
 
@@ -558,12 +676,16 @@ export class BlogService {
 
     await blogRepository.softDeleteById(id, actorId);
     loggers.admin.info('Blog moved to trash', { blogId: id, actorId });
+    if (blog.publicationStatus === BlogPublicationStatus.PUBLISHED) {
+      revalidateBlogContent(blog.slug);
+    }
   }
 
   async permanentDelete(id: string, actorId: string): Promise<void> {
     await this.getBlogOrThrow(id, true);
     await blogRepository.permanentDeleteById(id);
     loggers.admin.info('Blog permanently deleted', { blogId: id, actorId });
+    revalidateBlogContent();
   }
 
   async restore(id: string, actorId: string): Promise<BlogResponse> {
@@ -574,6 +696,9 @@ export class BlogService {
     if (!restored) throw new NotFoundError('Blog');
 
     loggers.admin.info('Blog restored from trash', { blogId: id, actorId });
+    if (restored.publicationStatus === BlogPublicationStatus.PUBLISHED) {
+      revalidateBlogContent(restored.slug);
+    }
     return this.toBlogResponse(restored);
   }
 
@@ -593,6 +718,7 @@ export class BlogService {
 
     if (!updated) throw new NotFoundError('Blog');
     loggers.admin.info('Blog published', { blogId: id, actorId });
+    revalidateBlogContent(updated.slug);
     return this.toBlogResponse(updated);
   }
 
@@ -607,6 +733,7 @@ export class BlogService {
 
     if (!updated) throw new NotFoundError('Blog');
     loggers.admin.info('Blog unpublished', { blogId: id, actorId });
+    revalidateBlogContent(updated.slug);
     return this.toBlogResponse(updated);
   }
 
@@ -679,6 +806,9 @@ export class BlogService {
       seoScore: source.seoScore,
       includeInSitemap: source.includeInSitemap,
       includeInRss: source.includeInRss,
+      relatedServices: source.relatedServices,
+      relatedBlogs: source.relatedBlogs,
+      relatedPortfolio: source.relatedPortfolio,
       duplicateOf: source._id,
       createdBy: toObjectId(actorId),
       updatedBy: toObjectId(actorId),
@@ -756,6 +886,9 @@ export class BlogService {
     }
 
     loggers.admin.info('Blog bulk action', { action: dto.action, count: affected, actorId });
+    if (affected > 0 && ['publish', 'delete', 'archive', 'restore'].includes(dto.action)) {
+      revalidateBlogContent();
+    }
     return { affected };
   }
 }

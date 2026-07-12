@@ -84,3 +84,110 @@ export const articleSeoFieldsSchema = z.object({
   includeInSitemap: z.boolean().optional(),
   includeInRss: z.boolean().optional(),
 });
+
+export const cmsImageAssetSchema = z.object({
+  url: z.string().min(1),
+  alt: z.string().max(200).trim().optional(),
+  caption: z.string().max(300).trim().optional(),
+  width: z.number().int().min(0).optional(),
+  height: z.number().int().min(0).optional(),
+});
+
+export const cmsRichContentSchema = z.object({
+  format: z.string().trim().optional(),
+  html: z.string().optional(),
+  plainText: z.string().optional(),
+  document: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+export const cmsFeatureItemSchema = z.object({
+  title: z.string().min(1).max(160).trim(),
+  description: z.string().min(1).max(2000).trim(),
+  icon: z.string().trim().optional(),
+  iconImage: z.string().trim().optional(),
+});
+
+export const cmsTechnologyItemSchema = z.object({
+  name: z.string().min(1).max(120).trim(),
+  level: z.number().min(0).max(100).optional(),
+  logo: z.string().trim().optional(),
+});
+
+export const cmsFaqItemSchema = z.object({
+  question: z.string().min(1).max(300).trim(),
+  answer: z.string().min(1).max(5000).trim(),
+});
+
+export const cmsPricingSchema = z.object({
+  starting: z.string().max(120).trim().optional(),
+  timeline: z.string().max(200).trim().optional(),
+  included: z.array(z.string().trim()).optional(),
+  note: z.string().max(500).trim().optional(),
+});
+
+export const cmsCtaSchema = z.object({
+  title: z.string().max(160).trim().optional(),
+  description: z.string().max(500).trim().optional(),
+  buttonLabel: z.string().max(80).trim().optional(),
+  buttonUrl: z.string().trim().optional(),
+});
+
+export const cmsProcessStepSchema = z.object({
+  title: z.string().min(1).max(160).trim(),
+  description: z.string().max(2000).trim().optional(),
+  order: z.number().int().min(0).optional(),
+});
+
+export const cmsTestimonialSchema = z.object({
+  author: z.string().min(1).max(120).trim(),
+  position: z.string().max(160).trim().optional(),
+  text: z.string().min(1).max(3000).trim(),
+  avatar: z.string().trim().optional(),
+  company: z.string().max(160).trim().optional(),
+});
+
+export const cmsStatisticSchema = z.object({
+  label: z.string().min(1).max(120).trim(),
+  value: z.string().min(1).max(80).trim(),
+  description: z.string().max(300).trim().optional(),
+});
+
+export const cmsGalleryItemSchema = z.object({
+  url: z.string().min(1),
+  alt: z.string().max(200).trim().optional(),
+  caption: z.string().max(300).trim().optional(),
+  order: z.number().int().min(0).optional(),
+});
+
+export const cmsExternalLinksSchema = z.object({
+  websiteUrl: z.string().trim().optional(),
+  playStoreUrl: z.string().trim().optional(),
+  appStoreUrl: z.string().trim().optional(),
+  githubUrl: z.string().trim().optional(),
+});
+
+export const serviceSeoFieldsSchema = z.object({
+  metaKeywords: z.array(z.string().trim()).optional(),
+  canonicalUrl: z.string().optional().or(z.literal('')),
+  robotsIndex: z.boolean().optional(),
+  robotsFollow: z.boolean().optional(),
+  seoScore: z.number().min(0).max(100).optional(),
+  faqSchema: z.array(cmsFaqItemSchema).optional(),
+  serviceSchema: z.record(z.string(), z.unknown()).optional(),
+  organizationSchema: z.record(z.string(), z.unknown()).optional(),
+  breadcrumbSchema: z.record(z.string(), z.unknown()).optional(),
+  includeInSitemap: z.boolean().optional(),
+});
+
+export const portfolioSeoFieldsSchema = z.object({
+  metaKeywords: z.array(z.string().trim()).optional(),
+  canonicalUrl: z.string().optional().or(z.literal('')),
+  robotsIndex: z.boolean().optional(),
+  robotsFollow: z.boolean().optional(),
+  seoScore: z.number().min(0).max(100).optional(),
+  creativeWorkSchema: z.record(z.string(), z.unknown()).optional(),
+  organizationSchema: z.record(z.string(), z.unknown()).optional(),
+  breadcrumbSchema: z.record(z.string(), z.unknown()).optional(),
+  imageObjectSchema: z.record(z.string(), z.unknown()).optional(),
+  includeInSitemap: z.boolean().optional(),
+});

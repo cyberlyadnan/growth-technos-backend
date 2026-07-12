@@ -60,6 +60,9 @@ export interface IBlog extends Document, ISeoFields, IArticleSeoFields {
   viewCount: number;
   likeCount: number;
   tableOfContents: ITableOfContentsItem[];
+  relatedServices: Types.ObjectId[];
+  relatedBlogs: Types.ObjectId[];
+  relatedPortfolio: Types.ObjectId[];
   duplicateOf?: Types.ObjectId;
   lastAutosavedAt?: Date;
   isDeleted: boolean;
@@ -130,6 +133,9 @@ const blogSchema = new Schema<IBlog>(
     viewCount: { type: Number, default: 0, min: 0 },
     likeCount: { type: Number, default: 0, min: 0 },
     tableOfContents: tableOfContentsField,
+    relatedServices: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
+    relatedBlogs: [{ type: Schema.Types.ObjectId, ref: 'Blog' }],
+    relatedPortfolio: [{ type: Schema.Types.ObjectId, ref: 'PortfolioProject' }],
     duplicateOf: { type: Schema.Types.ObjectId, ref: 'Blog', default: null },
     lastAutosavedAt: { type: Date, default: null },
     permanentlyDeletedAt: { type: Date, default: null },
