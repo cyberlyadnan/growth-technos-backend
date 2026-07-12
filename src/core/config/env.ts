@@ -5,8 +5,14 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5000),
   API_VERSION: z.string().default('v1'),
   APP_NAME: z.string().default('Growth Technos'),
-  APP_URL: z.string().url(),
-  CLIENT_URL: z.string().url(),
+  APP_URL: z
+    .string()
+    .url()
+    .transform((value) => value.replace(/\/+$/, '')),
+  CLIENT_URL: z
+    .string()
+    .url()
+    .transform((value) => value.replace(/\/+$/, '')),
 
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
 

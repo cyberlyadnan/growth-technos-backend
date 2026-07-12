@@ -13,7 +13,8 @@ const passwordResetTokenSchema = new Schema<IPasswordResetToken>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     tokenHash: { type: String, required: true, unique: true },
-    expiresAt: { type: Date, required: true },
+    // TTL index — documents are removed when expiresAt is reached (expireAfterSeconds: 0)
+    expiresAt: { type: Date, required: true, expires: 0 },
     usedAt: { type: Date },
   },
   {
@@ -30,8 +31,6 @@ const passwordResetTokenSchema = new Schema<IPasswordResetToken>(
     },
   },
 );
-
-passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const PasswordResetToken = model<IPasswordResetToken>(
   'PasswordResetToken',

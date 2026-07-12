@@ -18,13 +18,12 @@ const refreshTokenSchema = new Schema<IRefreshToken>(
     token: { type: String, required: true, unique: true },
     family: { type: String, required: true, index: true },
     isRevoked: { type: Boolean, default: false, index: true },
-    expiresAt: { type: Date, required: true },
+    // TTL index — documents are removed when expiresAt is reached (expireAfterSeconds: 0)
+    expiresAt: { type: Date, required: true, expires: 0 },
     userAgent: { type: String },
     ip: { type: String },
   },
   { timestamps: true },
 );
-
-refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const RefreshToken = model<IRefreshToken>('RefreshToken', refreshTokenSchema);
