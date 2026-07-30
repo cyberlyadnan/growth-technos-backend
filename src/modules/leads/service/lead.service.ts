@@ -194,6 +194,16 @@ export class LeadService {
     if (query.status) filter.status = query.status;
     if (query.source) filter.source = query.source;
     if (query.priority) filter.priority = query.priority;
+    if (query.leadTypes) {
+      const types = query.leadTypes
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (types.length === 1) filter.leadType = types[0];
+      else if (types.length > 1) filter.leadType = { $in: types };
+    } else if (query.leadType) {
+      filter.leadType = query.leadType;
+    }
     if (query.industry) filter.industry = query.industry;
     if (query.serviceInterested) filter.serviceInterested = query.serviceInterested;
     if (query.formId) filter.formId = new Types.ObjectId(query.formId);

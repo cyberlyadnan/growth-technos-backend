@@ -98,21 +98,32 @@ const utmSchema = z
   })
   .optional();
 
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().email().max(254).trim().toLowerCase().optional(),
+);
+
+const optionalTrimmed = (max: number) =>
+  z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().max(max).trim().optional(),
+  );
+
 export const submitLeadSchema = z
   .object({
     formSlug: z.string().min(1).max(220).trim().toLowerCase().optional(),
     formId: mongoIdSchema.optional(),
-    name: z.string().max(160).trim().optional(),
-    businessName: z.string().max(200).trim().optional(),
-    email: z.string().email().max(254).trim().toLowerCase().optional(),
-    phone: z.string().max(40).trim().optional(),
-    whatsapp: z.string().max(40).trim().optional(),
-    industry: z.string().max(120).trim().optional(),
-    businessType: z.string().max(120).trim().optional(),
-    serviceInterested: z.string().max(200).trim().optional(),
-    monthlyBudget: z.string().max(80).trim().optional(),
-    city: z.string().max(120).trim().optional(),
-    message: z.string().max(5000).trim().optional(),
+    name: optionalTrimmed(160),
+    businessName: optionalTrimmed(200),
+    email: optionalEmail,
+    phone: optionalTrimmed(40),
+    whatsapp: optionalTrimmed(40),
+    industry: optionalTrimmed(120),
+    businessType: optionalTrimmed(120),
+    serviceInterested: optionalTrimmed(200),
+    monthlyBudget: optionalTrimmed(80),
+    city: optionalTrimmed(120),
+    message: optionalTrimmed(5000),
     consent: z.boolean().optional(),
     customFields: z.record(z.string(), z.unknown()).optional(),
     leadType: z.nativeEnum(LeadType).optional(),
@@ -121,8 +132,8 @@ export const submitLeadSchema = z
     offerId: mongoIdSchema.optional(),
     magnetId: mongoIdSchema.optional(),
     popupId: mongoIdSchema.optional(),
-    landingPage: z.string().max(2000).trim().optional(),
-    referrer: z.string().max(2000).trim().optional(),
+    landingPage: optionalTrimmed(2000),
+    referrer: optionalTrimmed(2000),
     utm: utmSchema,
     website: z.string().max(200).optional(),
   })
@@ -135,6 +146,9 @@ export const listLeadsSchema = paginationQuerySchema.extend({
   status: z.nativeEnum(LeadStatus).optional(),
   source: z.nativeEnum(LeadSource).optional(),
   priority: z.nativeEnum(LeadPriority).optional(),
+  leadType: z.nativeEnum(LeadType).optional(),
+  /** Comma-separated LeadType values, e.g. contact_form,consultation */
+  leadTypes: z.string().max(500).trim().optional(),
   industry: z.string().max(120).trim().optional(),
   serviceInterested: z.string().max(200).trim().optional(),
   formId: mongoIdSchema.optional(),

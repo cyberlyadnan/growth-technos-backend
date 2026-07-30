@@ -137,14 +137,13 @@ async function upsertForm(thankYouIds: Record<string, string>, successMessageId:
   const existing = await LeadForm.findOne({ slug: 'contact' }).setOptions({ includeDeleted: true });
   const fields = [
     { key: 'name', label: 'Name', type: FormFieldType.TEXT, required: true, options: [], order: 0, placeholder: 'Your name' },
-    { key: 'email', label: 'Email', type: FormFieldType.EMAIL, required: true, options: [], order: 1, placeholder: 'you@company.com' },
-    { key: 'businessName', label: 'Business name', type: FormFieldType.TEXT, required: false, options: [], order: 2 },
-    { key: 'phone', label: 'Phone', type: FormFieldType.PHONE, required: false, options: [], order: 3 },
+    { key: 'phone', label: 'Phone', type: FormFieldType.PHONE, required: true, options: [], order: 1, placeholder: '+91 …' },
+    { key: 'email', label: 'Email', type: FormFieldType.EMAIL, required: false, options: [], order: 2, placeholder: 'you@company.com' },
+    { key: 'businessName', label: 'Business name', type: FormFieldType.TEXT, required: false, options: [], order: 3 },
     { key: 'industry', label: 'Industry', type: FormFieldType.SELECT, required: false, options: ['Healthcare', 'Restaurants', 'Salons', 'Other'], order: 4 },
     { key: 'serviceInterested', label: 'Service interested in', type: FormFieldType.TEXT, required: false, options: [], order: 5 },
-    { key: 'monthlyBudget', label: 'Monthly budget', type: FormFieldType.SELECT, required: false, options: ['₹5,000 - ₹10,000', '₹10,000 - ₹25,000', '₹25,000 - ₹50,000', '₹50,000+'], order: 6 },
-    { key: 'message', label: 'Message', type: FormFieldType.TEXTAREA, required: false, options: [], order: 7 },
-    { key: 'consent', label: 'I agree to be contacted regarding my inquiry.', type: FormFieldType.CONSENT, required: true, options: [], order: 8 },
+    { key: 'message', label: 'Message', type: FormFieldType.TEXTAREA, required: false, options: [], order: 6 },
+    { key: 'consent', label: 'I agree to be contacted regarding my inquiry.', type: FormFieldType.CONSENT, required: true, options: [], order: 7 },
   ];
 
   const payload = {

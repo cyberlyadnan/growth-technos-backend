@@ -226,6 +226,8 @@ export type ListLeadsQuery = {
   status?: LeadStatus;
   source?: LeadSource;
   priority?: LeadPriority;
+  leadType?: LeadType;
+  leadTypes?: string;
   industry?: string;
   serviceInterested?: string;
   formId?: string;
