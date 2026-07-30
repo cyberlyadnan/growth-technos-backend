@@ -262,6 +262,59 @@ export class LeadService {
       throw new BadRequestError('At least one of email, phone, or whatsapp is required');
     }
 
+    const leadType = dto.leadType ?? LeadType.CONTACT_FORM;
+
+    // Newsletter: upsert by email so re-subscribes don't create duplicates
+    if (leadType === LeadType.NEWSLETTER && dto.email) {
+      const existing = await Lead.findOne({
+        leadType: LeadType.NEWSLETTER,
+        email: dto.email.trim().toLowerCase(),
+        isDeleted: { $ne: true },
+      });
+
+      if (existing) {
+        if (dto.name) existing.name = dto.name;
+        if (dto.landingPage) existing.landingPage = dto.landingPage;
+        if (dto.referrer) existing.referrer = dto.referrer;
+        if (dto.utm) existing.utm = { ...(existing.utm ?? {}), ...dto.utm };
+        if (dto.consent !== undefined) existing.consent = dto.consent;
+        if (dto.customFields) {
+          const merged = {
+            ...mapCustomFields(existing.customFields),
+            ...dto.customFields,
+          };
+          existing.customFields = new Map(Object.entries(merged));
+        }
+        pushActivity(existing, {
+          type: LeadActivityType.UPDATED,
+          message: 'Newsletter subscription refreshed from website',
+        });
+        await existing.save();
+
+        return {
+          leadId: existing.id,
+          successMessage: {
+            headline: "You're already subscribed",
+            body: 'Thanks — we still have you on the newsletter list. No spam.',
+          },
+          redirect: {
+            mode: 'thank_you_page',
+            thankYouSlug: 'newsletter-subscribed',
+            path: '/thank-you/newsletter-subscribed',
+          },
+          eventsTriggered: existing.eventsTriggered ?? [],
+          analytics: {
+            event: 'lead_submit',
+            leadId: existing.id,
+            formSlug: form?.slug ?? dto.formSlug,
+            industry: existing.industry,
+            serviceInterested: existing.serviceInterested,
+            source: existing.source,
+          },
+        };
+      }
+    }
+
     const lead = await Lead.create({
       name: dto.name,
       businessName: dto.businessName,
@@ -276,7 +329,7 @@ export class LeadService {
       message: dto.message,
       consent: dto.consent ?? false,
       customFields: dto.customFields ?? {},
-      leadType: dto.leadType ?? LeadType.CONTACT_FORM,
+      leadType,
       source: dto.source ?? LeadSource.WEBSITE,
       status: LeadStatus.NEW,
       campaignId: toObjectId(dto.campaignId) ?? null,

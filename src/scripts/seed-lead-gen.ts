@@ -86,6 +86,21 @@ async function upsertThankYouPages() {
       ],
       relatedResources: [{ title: 'Salon solutions', url: '/industries/salons' }],
     },
+    {
+      slug: 'newsletter-subscribed',
+      type: ThankYouPageType.GENERIC,
+      headline: 'You’re subscribed',
+      body: 'Thanks for joining the Growth Technos newsletter. Expect occasional playbooks for healthcare, restaurants, and salons — no spam.',
+      timelineText: 'You’ll hear from us when we publish something useful.',
+      nextSteps: [
+        { title: 'Check your inbox', description: 'Add us to your contacts so tips don’t land in spam.', order: 0 },
+        { title: 'Explore industries', description: 'See how we help businesses like yours grow.', order: 1 },
+      ],
+      relatedResources: [
+        { title: 'Industries', url: '/industries' },
+        { title: 'Blog', url: '/blog' },
+      ],
+    },
   ];
 
   const ids: Record<string, string> = {};
@@ -178,6 +193,88 @@ async function upsertForm(thankYouIds: Record<string, string>, successMessageId:
   }
   return LeadForm.create(payload);
 }
+
+async function upsertNewsletterForm(thankYouIds: Record<string, string>, successMessageId: string) {
+  const existing = await LeadForm.findOne({ slug: 'newsletter' }).setOptions({ includeDeleted: true });
+  const fields = [
+    {
+      key: 'email',
+      label: 'Email',
+      type: FormFieldType.EMAIL,
+      required: true,
+      options: [],
+      order: 0,
+      placeholder: 'you@business.com',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FormFieldType.TEXT,
+      required: false,
+      options: [],
+      order: 1,
+      placeholder: 'Your name (optional)',
+    },
+    {
+      key: 'consent',
+      label: 'I agree to receive occasional emails from Growth Technos.',
+      type: FormFieldType.CONSENT,
+      required: true,
+      options: [],
+      order: 2,
+    },
+  ];
+
+  const payload = {
+    name: 'Newsletter Signup',
+    slug: 'newsletter',
+    title: 'Subscribe to our newsletter',
+    description: 'Occasional growth tips for healthcare, restaurants, and salons — no spam.',
+    fields,
+    microcopy: {
+      trustLine: 'No spam. Unsubscribe anytime.',
+      responseTimeLine: 'We only send when we have something useful.',
+      privacyNote: 'We’ll only email you newsletter content you signed up for.',
+      submitLabel: 'Subscribe',
+      consentLabel: 'I agree to receive occasional emails from Growth Technos.',
+    },
+    honeypotEnabled: true,
+    successMessageId,
+    thankYouPageId: thankYouIds['newsletter-subscribed'],
+    redirectRules: {
+      mode: 'thank_you_page' as const,
+      thankYouSlug: 'newsletter-subscribed',
+    },
+    status: EntityStatus.PUBLISHED,
+    isDeleted: false,
+    deletedAt: undefined,
+  };
+
+  if (existing) {
+    Object.assign(existing, payload);
+    await existing.save();
+    return existing;
+  }
+  return LeadForm.create(payload);
+}
+
+async function upsertNewsletterSuccessMessage() {
+  const existing = await SuccessMessage.findOne({ name: 'Newsletter success' });
+  const data = {
+    name: 'Newsletter success',
+    headline: 'You’re on the list',
+    body: 'Thanks for subscribing. Occasional playbooks only — no spam.',
+    secondaryCta: { type: CtaActionType.LINK, label: 'Read the blog', url: '/blog' },
+    status: EntityStatus.PUBLISHED,
+  };
+  if (existing) {
+    Object.assign(existing, data);
+    await existing.save();
+    return existing;
+  }
+  return SuccessMessage.create(data);
+}
+
 async function upsertOffers() {
   const defs = [
     {
@@ -362,11 +459,13 @@ async function main() {
   await connectDatabase();
   const thankYouIds = await upsertThankYouPages();
   const success = await upsertSuccessMessage();
+  const newsletterSuccess = await upsertNewsletterSuccessMessage();
   await upsertForm(thankYouIds, success.id);
+  await upsertNewsletterForm(thankYouIds, newsletterSuccess.id);
   await upsertOffers();
   await upsertChrome();
   logger.info(
-    'Lead-gen seed complete: thank-you pages, success message, contact form, audits, chrome.',
+    'Lead-gen seed complete: thank-you pages, success messages, contact + newsletter forms, audits, chrome.',
   );
   await disconnectDatabase();
   process.exit(0);
