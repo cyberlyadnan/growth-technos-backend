@@ -12,6 +12,9 @@ export interface TaxonomyResponse {
   slug: string;
   description?: string;
   icon?: string;
+  color?: string;
+  parent?: string | null;
+  sortOrder?: number;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: string;
@@ -68,6 +71,20 @@ export class TaxonomyService<T extends TaxonomyDocument> {
 
     if ('icon' in entity && typeof entity.icon === 'string' && entity.icon) {
       response.icon = entity.icon;
+    }
+
+    if ('color' in entity && typeof (entity as { color?: unknown }).color === 'string') {
+      const color = (entity as { color: string }).color;
+      if (color) response.color = color;
+    }
+
+    if ('parent' in entity) {
+      const parent = (entity as { parent?: { toString(): string } | string | null }).parent;
+      response.parent = parent ? String(parent) : null;
+    }
+
+    if ('sortOrder' in entity && typeof (entity as { sortOrder?: unknown }).sortOrder === 'number') {
+      response.sortOrder = (entity as { sortOrder: number }).sortOrder;
     }
 
     return response;

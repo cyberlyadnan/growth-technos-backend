@@ -112,7 +112,7 @@ function serviceCanonical(slug: string): string {
 }
 
 function portfolioCanonical(slug: string): string {
-  return `${SITE_URL}/portfolio/${slug}`;
+  return `${SITE_URL}/projects/${slug}`;
 }
 
 function toImageAsset(url?: string, alt?: string) {
