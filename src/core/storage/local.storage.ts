@@ -7,7 +7,6 @@ import {
   AllowedImageMimeType,
   IMAGE_MIME_EXTENSIONS,
 } from '@core/constants';
-import { BadRequestError } from '@core/errors';
 import { StorageService, StoredFile, UploadOptions } from './storage.types';
 
 function resolveExtension(originalName: string, mimeType: string): string {
