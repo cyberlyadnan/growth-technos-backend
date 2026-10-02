@@ -38,10 +38,6 @@ export class LocalStorageService implements StorageService {
   }
 
   async upload(file: Buffer, options: UploadOptions): Promise<StoredFile> {
-    if (!ALLOWED_IMAGE_MIME_TYPES.includes(options.mimeType as AllowedImageMimeType)) {
-      throw new BadRequestError('Unsupported image type');
-    }
-
     await this.ensureUploadDir();
 
     const extension = resolveExtension(options.originalName, options.mimeType);

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Permission } from '@core/constants';
 import { authenticate, authorize, validate } from '@core/middlewares';
 import { mediaController } from '../controller/media.controller';
-import { uploadMultipleImages, uploadSingleImage } from '../middleware/upload.middleware';
+import { uploadMultipleFiles, uploadSingleFile } from '../middleware/upload.middleware';
 import {
   listMediaSchema,
   mediaIdParamSchema,
@@ -23,14 +23,14 @@ router.get(
 router.post(
   '/upload',
   authorize(Permission.MEDIA_UPLOAD),
-  uploadSingleImage,
+  uploadSingleFile,
   validate(uploadMediaFieldsSchema),
   mediaController.upload,
 );
 router.post(
   '/upload/bulk',
   authorize(Permission.MEDIA_UPLOAD),
-  uploadMultipleImages,
+  uploadMultipleFiles,
   validate(uploadMediaFieldsSchema),
   mediaController.uploadBulk,
 );
