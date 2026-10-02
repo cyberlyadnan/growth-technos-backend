@@ -14,11 +14,13 @@ import { leadRoutes } from '@modules/leads';
 import { portfolioRoutes } from '@modules/portfolio';
 import { serviceRoutes } from '@modules/services';
 import { userRoutes } from '@modules/users';
+import { analyticsRoutes } from '@modules/analytics';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/analytics', analyticsRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/comments', commentRoutes);
 router.use('/categories', categoryRoutes);
