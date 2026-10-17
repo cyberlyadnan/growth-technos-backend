@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { agencyRoutes } from '@modules/agency';
 import { authRoutes } from '@modules/auth';
 import { authorRoutes } from '@modules/authors';
 import { blogRoutes } from '@modules/blogs';
@@ -21,6 +22,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/agency', agencyRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/comments', commentRoutes);
 router.use('/categories', categoryRoutes);

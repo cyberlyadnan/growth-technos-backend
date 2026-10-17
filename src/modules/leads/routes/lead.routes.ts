@@ -24,6 +24,7 @@ import {
   updateLeadFormSchema,
   updateLeadSchema,
 } from '../validation/lead.validation';
+import { convertLeadToClientSchema } from '@modules/agency/clients/validation/client.validation';
 
 const router = Router();
 
@@ -131,6 +132,13 @@ router.post(
   validate(leadIdParamSchema, 'params'),
   validate(addLeadNoteSchema),
   leadController.addLeadNote,
+);
+router.post(
+  '/:id/convert-to-client',
+  authorize(Permission.CLIENTS_CREATE, Permission.LEADS_UPDATE),
+  validate(leadIdParamSchema, 'params'),
+  validate(convertLeadToClientSchema),
+  leadController.convertToClient,
 );
 router.post(
   '/:id/restore',

@@ -58,6 +58,10 @@ export class AuthService {
   }
 
   private resolvePermissions(role: UserRole, explicit?: string[]): string[] {
+    // Admins always receive the current full permission set (includes AMS as it grows).
+    if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
+      return DEFAULT_ROLE_PERMISSIONS[role] ?? [];
+    }
     if (explicit && explicit.length > 0) return explicit;
     return DEFAULT_ROLE_PERMISSIONS[role] ?? [];
   }

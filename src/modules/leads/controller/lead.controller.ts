@@ -7,6 +7,7 @@ import {
   sendSuccess,
 } from '@core/response';
 import { DeviceType } from '@core/constants/leads';
+import { clientService } from '@modules/agency/clients/service/client.service';
 import { leadFormService } from '../service/lead-form.service';
 import { leadService } from '../service/lead.service';
 
@@ -123,6 +124,19 @@ export class LeadController {
   deleteLead = asyncHandler(async (req: Request, res: Response) => {
     await leadService.softDelete(String(req.params.id), req.user!.id, req.user!.email);
     sendNoContent(res);
+  });
+
+  convertToClient = asyncHandler(async (req: Request, res: Response) => {
+    const client = await clientService.convertFromLead(
+      String(req.params.id),
+      req.body,
+      {
+        id: req.user!.id,
+        role: req.user!.role,
+        fullName: req.user!.email,
+      },
+    );
+    sendCreated(res, client, 'Lead converted to client successfully');
   });
 }
 

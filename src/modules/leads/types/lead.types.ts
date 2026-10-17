@@ -178,6 +178,7 @@ export type LeadResponse = {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: string[];
   notes?: string;
+  convertedClientId?: string | null;
   activityLog: LeadActivityResponse[];
   isDeleted?: boolean;
   createdAt: string;

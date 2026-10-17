@@ -111,6 +111,7 @@ function mapLead(doc: ILead): LeadResponse {
     scoreBreakdown: doc.scoreBreakdown ?? null,
     eventsTriggered: doc.eventsTriggered ?? [],
     notes: doc.notes,
+    convertedClientId: doc.convertedClientId ? String(doc.convertedClientId) : null,
     activityLog: [...(doc.activityLog ?? [])]
       .map((entry) => mapActivity(entry as ILeadActivityEntry & { _id?: Types.ObjectId }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),

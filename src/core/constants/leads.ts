@@ -41,6 +41,7 @@ export enum LeadActivityType {
   RESTORED = 'restored',
   ARCHIVED = 'archived',
   UPDATED = 'updated',
+  CONVERTED_TO_CLIENT = 'converted_to_client',
 }
 
 export enum LeadSource {

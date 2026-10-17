@@ -68,6 +68,8 @@ export interface ILead extends Document {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: LeadEventType[];
   notes?: string;
+  /** Set when lead is converted into an AgencyClient (AMS). */
+  convertedClientId?: Types.ObjectId | null;
   activityLog: ILeadActivityEntry[];
   isDeleted: boolean;
   deletedAt?: Date;
@@ -155,6 +157,12 @@ const leadSchema = new Schema<ILead>(
       },
     ],
     notes: { type: String, trim: true, maxlength: 5000 },
+    convertedClientId: {
+      type: Schema.Types.ObjectId,
+      ref: 'AgencyClient',
+      default: null,
+      index: true,
+    },
     activityLog: { type: [leadActivitySchema], default: [] },
     ...auditSchemaFields,
   },
