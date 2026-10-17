@@ -9,6 +9,11 @@ async function bootstrap(): Promise<void> {
 
   const app = createApp();
 
+  const { startRenewalReminderScheduler } = await import(
+    '@modules/agency/assets/service/renewal.service'
+  );
+  startRenewalReminderScheduler();
+
   const server = app.listen(env.PORT, () => {
     logger.info(`🚀 ${env.APP_NAME} API running`, {
       port: env.PORT,

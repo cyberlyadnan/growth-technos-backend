@@ -25,3 +25,8 @@ process.env.STORAGE_PROVIDER = 'local';
 process.env.BLOG_UPLOAD_DIR = 'uploads/test-blogs';
 process.env.BLOG_UPLOAD_URL_PREFIX = '/uploads/test-blogs';
 process.env.BLOG_MAX_UPLOAD_MB = '5';
+// 32-byte AES key as 64 hex chars — test-only; never use in production
+process.env.AGENCY_VAULT_ACTIVE_KEY_VERSION = '1';
+process.env.AGENCY_VAULT_KEYS_JSON =
+  '{"1":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}';
+process.env.AGENCY_RENEWAL_REMINDER_ENABLED = 'false';

@@ -20,6 +20,7 @@ import { assertPositiveMinor } from './billing-calc';
 import { invoiceService, type BillingActor } from './invoice.service';
 import { withOptionalTransaction } from './mongo-tx';
 import { buildReceiptPdfBuffer } from './receipt-pdf.service';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 
 type Filter = Record<string, unknown>;
 
@@ -338,6 +339,20 @@ export class PaymentService {
     }
 
     await this.ensureReceipt(doc.id, actor);
+    await activityService.record({
+      actor: { id: actor.id, fullName: actor.fullName },
+      action: 'payment_allocated',
+      entityType: 'payment',
+      entityId: doc.id,
+      entityCode: doc.code,
+      clientId: String(doc.clientId),
+      message: `Payment confirmed: ${doc.code}`,
+      meta: {
+        amountMinor: doc.amountMinor,
+        currency: doc.currency,
+        allocatedMinor: activeAllocatedMinor(doc),
+      },
+    });
     const fresh = await this.getOrThrow(doc.id);
     const extras = await this.resolveExtras(fresh);
     return this.toResponse(fresh, extras);

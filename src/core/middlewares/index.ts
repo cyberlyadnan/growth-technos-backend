@@ -6,6 +6,7 @@ export {
   rateLimiter,
   authRateLimiter,
   commentRateLimiter,
+  vaultSensitiveRateLimiter,
   sanitizeMiddleware,
   hppMiddleware,
   compressionMiddleware,

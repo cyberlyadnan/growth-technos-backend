@@ -8,6 +8,7 @@ import { UserRole } from '@core/constants';
 import { DEFAULT_AGENCY_CURRENCY, type CurrencyCode } from '@core/utils/money';
 import { AgencyClient } from '@modules/agency/clients/model/client.model';
 import { allocateAgencyDocumentCode } from '@modules/agency/clients/service/number-sequence.service';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 import { User } from '@modules/users/model/user.model';
 import {
   AgencyProject,
@@ -707,6 +708,17 @@ export class ProjectService {
       actorId: actor.id,
     });
 
+    await activityService.record({
+      actor: { id: actor.id, fullName: actor.fullName },
+      action: 'project_created',
+      entityType: 'project',
+      entityId: project.id,
+      entityCode: code,
+      clientId: client.id,
+      projectId: project.id,
+      message: `Project created: ${project.name}`,
+    });
+
     return this.toResponse(project, {
       clientName: client.name,
       clientCode: client.code,
@@ -877,6 +889,24 @@ export class ProjectService {
     if (!updated) throw new NotFoundError('Project');
 
     loggers.admin.info('Agency project updated', { id, actorId: actor.id });
+    if (changes.length) {
+      const action = dto.milestones
+        ? 'project_milestones_updated'
+        : dto.status && dto.status !== existing.status
+          ? 'project_status_changed'
+          : 'project_updated';
+      await activityService.record({
+        actor: { id: actor.id, fullName: actor.fullName },
+        action,
+        entityType: 'project',
+        entityId: id,
+        entityCode: updated.code,
+        clientId: String(updated.clientId),
+        projectId: id,
+        message: `Project updated (${changes.join(', ')})`,
+        meta: { changes },
+      });
+    }
     const names = await this.resolveNames(updated);
     return this.toResponse(updated, names);
   }

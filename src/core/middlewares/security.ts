@@ -87,6 +87,21 @@ export const commentRateLimiter = rateLimit({
   },
 });
 
+/** Tight limit for credential reveal / rewrap / secret update. */
+export const vaultSensitiveRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many vault sensitive actions, please try again later',
+    data: null,
+    errors: [],
+    meta: null,
+  },
+});
+
 export const sanitizeMiddleware = mongoSanitizeMiddleware({ replaceWith: '_' });
 
 export const hppMiddleware = hpp();

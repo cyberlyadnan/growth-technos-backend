@@ -82,6 +82,10 @@ export interface IAgencyInvoice extends Document {
   clientId: Types.ObjectId;
   projectId?: Types.ObjectId | null;
   quotationId?: Types.ObjectId | null;
+  /** Optional link to a maintenance agreement billing period (reuse — not a parallel ledger). */
+  maintenanceAgreementId?: Types.ObjectId | null;
+  /** Unique per agreement period, e.g. 2026-Q1 or 2026-03 — used for duplicate draft prevention. */
+  maintenancePeriodKey?: string;
   title: string;
   status: InvoiceStatus;
   issueDate?: Date;
@@ -210,6 +214,13 @@ const invoiceSchema = new Schema<IAgencyInvoice>(
       default: null,
       index: true,
     },
+    maintenanceAgreementId: {
+      type: Schema.Types.ObjectId,
+      ref: 'MaintenanceAgreement',
+      default: null,
+      index: true,
+    },
+    maintenancePeriodKey: { type: String, trim: true, maxlength: 40, index: true },
     title: { type: String, required: true, trim: true, maxlength: 240 },
     status: {
       type: String,
@@ -268,6 +279,16 @@ const invoiceSchema = new Schema<IAgencyInvoice>(
 invoiceSchema.index({ clientId: 1, status: 1, createdAt: -1 });
 invoiceSchema.index({ projectId: 1, createdAt: -1 });
 invoiceSchema.index({ kind: 1, originalInvoiceId: 1 });
+invoiceSchema.index(
+  { maintenanceAgreementId: 1, maintenancePeriodKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      maintenanceAgreementId: { $type: 'objectId' },
+      maintenancePeriodKey: { $type: 'string' },
+    },
+  },
+);
 applySoftDeleteQuery(invoiceSchema);
 
 export const AgencyInvoice = model<IAgencyInvoice>('AgencyInvoice', invoiceSchema);

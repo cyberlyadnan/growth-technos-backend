@@ -1,10 +1,9 @@
 /**
- * Security requirements for future AMS financial records, files, and credentials.
- * These are enforceable contracts for later phases — not runtime crypto yet.
+ * Security requirements for AMS financial records, files, and credentials.
  */
 
 export const AGENCY_SECURITY_REQUIREMENTS = {
-  version: 1,
+  version: 2,
   financialRecords: [
     'All create/update/delete of quotations, invoices, payments, and expenses must be permission-gated server-side.',
     'Monetary values must be stored as integer minor units (see money utils); never trust client-formatted strings.',
@@ -20,10 +19,16 @@ export const AGENCY_SECURITY_REQUIREMENTS = {
   ],
   credentials: [
     'Never store credential secrets in plaintext fields or application logs.',
-    'Encrypt secrets at rest with a server-side key (env or KMS); only ciphertext + metadata in MongoDB.',
-    'Reveal/decrypt requires ASSETS_REVEAL permission and must emit an audit event.',
-    'Frontend must never receive raw secrets in list endpoints; detail reveal is an explicit authenticated action.',
-    'Rotate encryption keys with a documented re-encryption procedure before enabling the vault.',
+    'Encrypt secrets at rest with AES-256-GCM (Node crypto). Keys live only in AGENCY_VAULT_* env — never MongoDB or source.',
+    'If vault keys are missing, create/reveal/update-secret refuse with an error. There is no plaintext fallback.',
+    'Reveal/decrypt requires ASSETS_REVEAL, password reauthentication, rate limiting, and an audit event (no secret in audit).',
+    'List/detail responses expose maskedHint only. Plaintext is returned solely from POST .../reveal.',
+    'Key rotation: add new version to AGENCY_VAULT_KEYS_JSON, set AGENCY_VAULT_ACTIVE_KEY_VERSION, rewrap records via POST .../rewrap, then retire old keys.',
+  ],
+  renewals: [
+    'Renewal reminders support in_app and email channels.',
+    'Email is sent only when SMTP is configured; otherwise status is email_skipped_unconfigured and delivery is not claimed.',
+    'In-process scheduler runs when AGENCY_RENEWAL_REMINDER_ENABLED=true; otherwise use POST /agency/assets/renewals/process-due.',
   ],
   transportAndAuth: [
     'All AMS routes require authenticate + authorize(Permission.*); no public agency endpoints.',

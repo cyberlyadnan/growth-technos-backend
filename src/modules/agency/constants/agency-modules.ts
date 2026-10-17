@@ -16,6 +16,8 @@ export type AgencyModuleId =
   | 'assets'
   | 'maintenance'
   | 'documents'
+  | 'activity'
+  | 'handovers'
   | 'reports';
 
 export type AgencyModuleDefinition = {
@@ -90,7 +92,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'assets',
     title: 'Assets & Credentials',
     description: 'Hosting accounts and encrypted credentials vault.',
-    phase: 'planned',
+    phase: 'foundation',
     readPermission: 'assets:read',
   },
   {
@@ -98,16 +100,32 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'maintenance',
     title: 'Maintenance',
     description: 'Retainer and maintenance schedules for clients.',
-    phase: 'planned',
+    phase: 'foundation',
     readPermission: 'maintenance:read',
   },
   {
     id: 'documents',
     slug: 'documents',
     title: 'Documents',
-    description: 'Client and project document library.',
-    phase: 'planned',
+    description: 'Client and project document library with protected downloads.',
+    phase: 'foundation',
     readPermission: 'documents:read',
+  },
+  {
+    id: 'activity',
+    slug: 'activity',
+    title: 'Activity History',
+    description: 'Immutable audit trail of important agency business events.',
+    phase: 'foundation',
+    readPermission: 'agency:read',
+  },
+  {
+    id: 'handovers',
+    slug: 'handovers',
+    title: 'Project Handover',
+    description: 'Configurable handover checklists and branded PDF reports.',
+    phase: 'foundation',
+    readPermission: 'projects:read',
   },
   {
     id: 'reports',

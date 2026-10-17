@@ -20,6 +20,7 @@ import {
   IClientAddress,
 } from '../model/client.model';
 import { allocateAgencyDocumentCode } from './number-sequence.service';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 
 type ClientFilter = Record<string, unknown>;
 
@@ -491,6 +492,15 @@ export class ClientService {
     });
 
     loggers.admin.info('Agency client created', { id: client.id, code, actorId: actor.id });
+    await activityService.record({
+      actor: { id: actor.id, fullName: actor.fullName },
+      action: 'client_created',
+      entityType: 'client',
+      entityId: client.id,
+      entityCode: code,
+      clientId: client.id,
+      message: `Client created: ${client.name}`,
+    });
     return this.toResponse(client);
   }
 
@@ -576,6 +586,18 @@ export class ClientService {
     if (!updated) throw new NotFoundError('Client');
 
     loggers.admin.info('Agency client updated', { id, actorId: actor.id });
+    if (changes.length) {
+      await activityService.record({
+        actor: { id: actor.id, fullName: actor.fullName },
+        action: dto.status && dto.status !== existing.status ? 'client_status_changed' : 'client_updated',
+        entityType: 'client',
+        entityId: id,
+        entityCode: updated.code,
+        clientId: id,
+        message: `Client updated (${changes.join(', ')})`,
+        meta: { changes },
+      });
+    }
     const managerName = await this.resolveManagerName(
       updated.assignedAccountManagerId ? String(updated.assignedAccountManagerId) : null,
     );

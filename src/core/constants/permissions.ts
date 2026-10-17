@@ -123,10 +123,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.EXPENSES_DELETE,
     Permission.DOCUMENTS_READ,
     Permission.DOCUMENTS_CREATE,
+    Permission.DOCUMENTS_UPDATE,
+    Permission.DOCUMENTS_DELETE,
     Permission.MAINTENANCE_READ,
     Permission.MAINTENANCE_CREATE,
     Permission.MAINTENANCE_UPDATE,
+    Permission.MAINTENANCE_DELETE,
     Permission.ASSETS_READ,
+    Permission.ASSETS_CREATE,
+    Permission.ASSETS_UPDATE,
+    Permission.ASSETS_DELETE,
+    // ASSETS_REVEAL intentionally omitted for manager — admin/super_admin only by default
     Permission.REPORTS_READ,
   ],
   viewer: [

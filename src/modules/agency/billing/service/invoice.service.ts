@@ -25,6 +25,7 @@ import {
   type TaxConfigInput,
 } from './billing-calc';
 import { buildInvoicePdfBuffer } from './invoice-pdf.service';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 
 type Filter = Record<string, unknown>;
 
@@ -38,6 +39,8 @@ export type CreateInvoiceDto = {
   clientId: string;
   projectId?: string | null;
   quotationId?: string | null;
+  maintenanceAgreementId?: string | null;
+  maintenancePeriodKey?: string;
   title: string;
   issueDate?: Date | null;
   dueDate?: Date | null;
@@ -469,6 +472,10 @@ export class InvoiceService {
       projectName: extras?.projectName,
       projectCode: extras?.projectCode,
       quotationId: doc.quotationId ? String(doc.quotationId) : null,
+      maintenanceAgreementId: doc.maintenanceAgreementId
+        ? String(doc.maintenanceAgreementId)
+        : null,
+      maintenancePeriodKey: doc.maintenancePeriodKey,
       title: doc.title,
       status: doc.status,
       issueDate: doc.issueDate?.toISOString(),
@@ -649,12 +656,27 @@ export class InvoiceService {
     const paymentTermsDays = dto.paymentTermsDays ?? client.paymentTermsDays ?? 15;
     const taxConfig = this.resolveTaxConfig(dto);
 
+    if (dto.maintenanceAgreementId && dto.maintenancePeriodKey) {
+      const existing = await AgencyInvoice.findOne({
+        maintenanceAgreementId: dto.maintenanceAgreementId,
+        maintenancePeriodKey: dto.maintenancePeriodKey,
+        isDeleted: { $ne: true },
+      }).exec();
+      if (existing) {
+        throw new ConflictError(
+          `A maintenance invoice already exists for period ${dto.maintenancePeriodKey} (${existing.code})`,
+        );
+      }
+    }
+
     const doc = new AgencyInvoice({
       code,
       kind: 'invoice',
       clientId: dto.clientId,
       projectId: dto.projectId || null,
       quotationId: dto.quotationId || null,
+      maintenanceAgreementId: dto.maintenanceAgreementId || null,
+      maintenancePeriodKey: dto.maintenancePeriodKey || undefined,
       title: dto.title.trim(),
       status: 'draft',
       issueDate: dto.issueDate || undefined,
@@ -810,6 +832,17 @@ export class InvoiceService {
       }),
     );
     await doc.save();
+    await activityService.record({
+      actor: { id: actor.id, fullName: actor.fullName },
+      action: 'invoice_issued',
+      entityType: 'invoice',
+      entityId: doc.id,
+      entityCode: doc.code,
+      clientId: String(doc.clientId),
+      projectId: doc.projectId ? String(doc.projectId) : null,
+      message: `Invoice issued: ${doc.code}`,
+      meta: { grandTotalMinor: doc.grandTotalMinor, currency: doc.currency },
+    });
     const extras = await this.resolveExtras(doc);
     return this.toResponse(doc, extras);
   }

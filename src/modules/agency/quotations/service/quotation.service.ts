@@ -9,6 +9,7 @@ import { AgencyClient } from '@modules/agency/clients/model/client.model';
 import { allocateAgencyDocumentCode } from '@modules/agency/clients/service/number-sequence.service';
 import { AgencyProject } from '@modules/agency/projects/model/project.model';
 import { projectService } from '@modules/agency/projects/service/project.service';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 import {
   AgencyQuotation,
   IAgencyQuotation,
@@ -639,6 +640,18 @@ export class QuotationService {
     );
     previous.updatedBy = new Types.ObjectId(actor.id);
     await previous.save();
+
+    await activityService.record({
+      actor: { id: actor.id, fullName: actor.fullName },
+      action: 'quotation_revised',
+      entityType: 'quotation',
+      entityId: revision.id,
+      entityCode: revision.code,
+      clientId: String(revision.clientId),
+      projectId: revision.projectId ? String(revision.projectId) : null,
+      message: `Quotation revision created: ${revision.code} (from ${previous.code})`,
+      meta: { previousCode: previous.code, version: nextVersion },
+    });
 
     const extras = await this.resolveExtras(revision);
     return this.toResponse(revision, extras);

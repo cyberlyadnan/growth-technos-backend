@@ -71,10 +71,28 @@ const envSchema = z.object({
 
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
 
+  /**
+   * Agency credentials vault (AES-256-GCM). Optional so the API can boot without the vault;
+   * encrypt/decrypt/reveal refuse to run until both are set. Never store these in MongoDB.
+   * AGENCY_VAULT_KEYS_JSON example: {"1":"<64 hex chars>","2":"<64 hex chars>"}
+   */
+  AGENCY_VAULT_ACTIVE_KEY_VERSION: z.string().optional(),
+  AGENCY_VAULT_KEYS_JSON: z.string().optional(),
+  /** When true, process due renewal reminders on an interval (in-process; no Bull worker yet). */
+  AGENCY_RENEWAL_REMINDER_ENABLED: z
+    .string()
+    .transform((val) => val === 'true')
+    .default(false),
+  AGENCY_RENEWAL_REMINDER_INTERVAL_MS: z.coerce.number().int().positive().default(3_600_000),
+
   STORAGE_PROVIDER: z.enum(['local', 's3', 'firebase']).default('local'),
   BLOG_UPLOAD_DIR: z.string().default('uploads/blogs'),
   BLOG_UPLOAD_URL_PREFIX: z.string().default('/uploads/blogs'),
   BLOG_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(5),
+
+  /** Private agency document vault — not served as public static files. */
+  AGENCY_DOC_UPLOAD_DIR: z.string().default('uploads/agency-documents'),
+  AGENCY_DOC_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(15),
 });
 
 export type Env = z.infer<typeof envSchema>;

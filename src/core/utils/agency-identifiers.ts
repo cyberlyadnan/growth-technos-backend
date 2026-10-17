@@ -10,7 +10,14 @@ export type AgencyDocumentKind =
   | 'invoice'
   | 'receipt'
   | 'expense'
-  | 'payment';
+  | 'payment'
+  | 'asset'
+  | 'credential'
+  | 'renewal'
+  | 'maintenance'
+  | 'support'
+  | 'document'
+  | 'handover'
 
 export type AgencyNumberingRule = {
   kind: AgencyDocumentKind;
@@ -72,6 +79,55 @@ export const AGENCY_NUMBERING_RULES: Record<AgencyDocumentKind, AgencyNumberingR
     includeYear: true,
     sequenceWidth: 4,
     example: 'GT-PAY-2026-0001',
+  },
+  asset: {
+    kind: 'asset',
+    prefix: 'GT-AST',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-AST-2026-0001',
+  },
+  credential: {
+    kind: 'credential',
+    prefix: 'GT-CRD',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-CRD-2026-0001',
+  },
+  renewal: {
+    kind: 'renewal',
+    prefix: 'GT-RNW',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-RNW-2026-0001',
+  },
+  maintenance: {
+    kind: 'maintenance',
+    prefix: 'GT-MNT',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-MNT-2026-0001',
+  },
+  support: {
+    kind: 'support',
+    prefix: 'GT-SUP',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-SUP-2026-0001',
+  },
+  document: {
+    kind: 'document',
+    prefix: 'GT-DOC',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-DOC-2026-0001',
+  },
+  handover: {
+    kind: 'handover',
+    prefix: 'GT-HDO',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-HDO-2026-0001',
   },
 };
 
