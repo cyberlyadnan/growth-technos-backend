@@ -22,6 +22,7 @@ export const agencyController = {
         nextImplementation: null,
         notes: [
           'Clients, projects, quotations, invoices, payments, receipts, expenses, reports, assets, credentials, renewals, maintenance, documents, activity history, and handovers are live.',
+          'Executive dashboard at /agency/reports/executive-dashboard uses live MongoDB actuals only — invoiced ≠ cash collected.',
           'Documents use private on-disk storage with authenticated downloads — not public CDN URLs.',
           'Activity history sanitizes secrets and refuses silent modification of immutable financial events.',
           'Handover PDFs exclude passwords and API keys; credential transfer uses the vault with audited reveal.',

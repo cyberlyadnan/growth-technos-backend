@@ -73,4 +73,23 @@ export const reportsController = {
     const data = await reportsService.recurring(filtersFromQuery(req.query));
     sendSuccess(res, data, 'Recurring revenue and costs');
   }),
+
+  executiveDashboard: asyncHandler(async (req: Request, res: Response) => {
+    const filters = filtersFromQuery(req.query);
+    if (req.query.format === 'csv') {
+      const file = await reportsService.exportExecutiveDashboardCsv(filters);
+      sendCsv(res, file.filename, file.csv);
+      return;
+    }
+    if (req.query.format === 'pdf') {
+      const file = await reportsService.exportExecutiveDashboardPdf(filters);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.send(file.buffer);
+      return;
+    }
+    const data = await reportsService.executiveDashboard(filters);
+    sendSuccess(res, data, 'Executive agency dashboard');
+  }),
 };

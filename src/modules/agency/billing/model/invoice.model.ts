@@ -279,6 +279,9 @@ const invoiceSchema = new Schema<IAgencyInvoice>(
 invoiceSchema.index({ clientId: 1, status: 1, createdAt: -1 });
 invoiceSchema.index({ projectId: 1, createdAt: -1 });
 invoiceSchema.index({ kind: 1, originalInvoiceId: 1 });
+/** Report / executive dashboard aggregations */
+invoiceSchema.index({ kind: 1, status: 1, currency: 1, issueDate: -1 });
+invoiceSchema.index({ kind: 1, status: 1, dueDate: 1, balanceDueMinor: 1 });
 invoiceSchema.index(
   { maintenanceAgreementId: 1, maintenancePeriodKey: 1 },
   {

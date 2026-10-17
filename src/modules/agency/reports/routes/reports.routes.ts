@@ -50,5 +50,11 @@ router.get(
   validate(reportFiltersSchema, 'query'),
   reportsController.recurring,
 );
+router.get(
+  '/executive-dashboard',
+  authorize(Permission.REPORTS_READ),
+  validate(reportFiltersSchema, 'query'),
+  reportsController.executiveDashboard,
+);
 
 export default router;

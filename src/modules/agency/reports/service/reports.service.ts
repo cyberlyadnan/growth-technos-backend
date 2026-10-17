@@ -4,9 +4,14 @@ import { AgencyInvoice } from '@modules/agency/billing/model/invoice.model';
 import { AgencyPayment } from '@modules/agency/billing/model/payment.model';
 import { AgencyExpense } from '@modules/agency/expenses/model/expense.model';
 import { AgencyProject } from '@modules/agency/projects/model/project.model';
+import { AgencyQuotation } from '@modules/agency/quotations/model/quotation.model';
+import { AgencyRenewal } from '@modules/agency/assets/model/renewal.model';
+import { MaintenanceAgreement } from '@modules/agency/maintenance/model/agreement.model';
+import { activityService } from '@modules/agency/activity/service/activity.service';
 import { DEFAULT_AGENCY_CURRENCY, type CurrencyCode } from '@core/utils/money';
 import { buildPaginationMeta, parsePaginationQuery } from '@core/pagination/pagination';
 import { PaginationMeta, PaginationQuery } from '@core/types';
+import { buildExecutiveDashboardPdfBuffer } from './executive-dashboard-pdf.service';
 
 export type ReportFilters = {
   from?: Date;
@@ -108,6 +113,13 @@ export class ReportsService {
         basis: 'mixed' as const,
         summary:
           'Recurring-flagged expenses and projects with recurring billing model — only where records exist.',
+      },
+      {
+        id: 'executive_dashboard',
+        title: 'Executive dashboard',
+        basis: 'mixed' as const,
+        summary:
+          'Live operational counts, financial actuals, trends, renewals, maintenance, and recent activity.',
       },
     ];
   }
@@ -791,6 +803,560 @@ export class ReportsService {
       ]),
     );
     return { filename: `agency-client-balances-${Date.now()}.csv`, csv };
+  }
+
+  /**
+   * Executive dashboard — all figures from live records.
+   *
+   * Definitions:
+   * - Active clients: status=active, not deleted (point-in-time; not date-ranged).
+   * - Projects active/completed: status match, not deleted.
+   * - Projects overdue: status in active|planned|on_hold, targetDeliveryDate < now, no completionDate.
+   * - Quotations awaiting decision: status=issued (not expired status); still listed if expiryDate passed until marked expired.
+   * - Finance totals: same as summary() — invoiced net of credit notes; confirmed payments exclude refunds/pending;
+   *   outstanding uses balanceDueMinor (allocation-aware); overdue uses dueDate + open balance.
+   * - Gross margin: invoiced net − recorded/finalized expenses (invoice basis, not cash profit).
+   * - Trends: monthly buckets of invoiced net and expenses within range (default last 12 months).
+   * - Revenue by service: posted invoice grand totals (minus credit notes) grouped by linked project's serviceCategory.
+   */
+  async executiveDashboard(filters: ReportFilters) {
+    const currency = filters.currency ?? DEFAULT_AGENCY_CURRENCY;
+    const now = new Date();
+    const trendFilters = this.resolveTrendFilters(filters);
+
+    const [
+      summary,
+      operations,
+      monthlyTrends,
+      revenueByService,
+      upcomingRenewals,
+      maintenanceExpiring,
+      projectProfitability,
+      clientBalances,
+      recentActivity,
+    ] = await Promise.all([
+      this.summary(filters),
+      this.operationalCounts(filters, now),
+      this.monthlyTrends(trendFilters),
+      this.revenueByServiceCategory(filters),
+      this.upcomingRenewals(filters, now, 90),
+      this.maintenanceExpiringSoon(filters, now, 90),
+      this.projectProfitability(filters, { page: 1, limit: 15 }),
+      this.clientBalances(filters, { page: 1, limit: 15 }),
+      activityService.list({
+        page: 1,
+        limit: 20,
+        clientId: filters.clientId,
+        projectId: filters.projectId,
+      }),
+    ]);
+
+    return {
+      currency,
+      generatedAt: now.toISOString(),
+      filters: summary.filters,
+      methodologyNote: summary.methodologyNote,
+      definitions: {
+        ...summary.definitions,
+        operations: {
+          basis: 'mixed' as const,
+          description:
+            'Live counts from client/project/quotation collections. Overdue projects use targetDeliveryDate, not estimates.',
+          taxTreatment: 'N/A',
+          refundTreatment: 'N/A',
+          expenseTreatment: 'N/A',
+        },
+        trends: {
+          basis: 'mixed' as const,
+          description:
+            'Monthly invoiced revenue (issued invoices − credit notes by issueDate) and recorded/finalized expenses by expenseDate.',
+          taxTreatment: 'Tax-inclusive invoice grand totals.',
+          refundTreatment: 'Credit notes reduce invoiced revenue in the month of the credit note issueDate.',
+          expenseTreatment: 'Draft/void expenses excluded.',
+        },
+        revenueByService: {
+          basis: 'invoice' as const,
+          description:
+            'Posted invoice revenue attributed via project.serviceCategory. Unlinked invoices appear as uncategorized.',
+          taxTreatment: 'Tax-inclusive.',
+          refundTreatment: 'Credit notes attributed the same way and subtracted.',
+          expenseTreatment: 'Not included in this breakdown.',
+        },
+      },
+      operations,
+      finance: summary.totals,
+      monthlyTrends,
+      revenueByServiceCategory: revenueByService,
+      upcomingRenewals,
+      maintenanceExpiring,
+      projectProfitability: {
+        methodology: projectProfitability.methodology,
+        items: projectProfitability.items,
+      },
+      clientBalances: {
+        methodology: clientBalances.methodology,
+        items: clientBalances.items,
+      },
+      recentActivity: recentActivity.items,
+    };
+  }
+
+  private resolveTrendFilters(filters: ReportFilters): ReportFilters {
+    if (filters.from || filters.to) return filters;
+    const to = new Date();
+    const from = new Date(to);
+    from.setUTCMonth(from.getUTCMonth() - 11);
+    from.setUTCDate(1);
+    from.setUTCHours(0, 0, 0, 0);
+    return { ...filters, from, to };
+  }
+
+  private async operationalCounts(filters: ReportFilters, now: Date) {
+    const clientMatch: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      status: 'active',
+    };
+    if (filters.clientId) clientMatch._id = new Types.ObjectId(filters.clientId);
+
+    const projectBase: Record<string, unknown> = { isDeleted: { $ne: true } };
+    if (filters.clientId) projectBase.clientId = new Types.ObjectId(filters.clientId);
+    if (filters.projectId) projectBase._id = new Types.ObjectId(filters.projectId);
+
+    const quotationMatch: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      status: 'issued',
+    };
+    if (filters.clientId) quotationMatch.clientId = new Types.ObjectId(filters.clientId);
+    if (filters.projectId) quotationMatch.projectId = new Types.ObjectId(filters.projectId);
+
+    const [
+      activeClients,
+      projectsActive,
+      projectsCompleted,
+      projectsOverdue,
+      quotationsAwaitingDecision,
+    ] = await Promise.all([
+      AgencyClient.countDocuments(clientMatch).exec(),
+      AgencyProject.countDocuments({ ...projectBase, status: 'active' }).exec(),
+      AgencyProject.countDocuments({ ...projectBase, status: 'completed' }).exec(),
+      AgencyProject.countDocuments({
+        ...projectBase,
+        status: { $in: ['active', 'planned', 'on_hold'] },
+        targetDeliveryDate: { $lt: now },
+        $or: [{ completionDate: null }, { completionDate: { $exists: false } }],
+      }).exec(),
+      AgencyQuotation.countDocuments(quotationMatch).exec(),
+    ]);
+
+    return {
+      activeClients,
+      projectsActive,
+      projectsCompleted,
+      projectsOverdue,
+      quotationsAwaitingDecision,
+      definitions: {
+        overdueProjects:
+          'status ∈ {active, planned, on_hold} AND targetDeliveryDate < now AND completionDate empty',
+        quotationsAwaitingDecision: 'status = issued (awaiting accept/reject)',
+      },
+    };
+  }
+
+  private async monthlyTrends(filters: ReportFilters) {
+    const currency = filters.currency ?? DEFAULT_AGENCY_CURRENCY;
+    const invoiceMatch: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      kind: 'invoice',
+      status: { $in: POSTED_INVOICE_STATUSES },
+      ...matchCurrency(filters),
+      ...clientProjectMatch(filters),
+      ...dateRange('issueDate', filters),
+    };
+    const creditMatch: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      kind: 'credit_note',
+      status: { $nin: ['draft', 'cancelled'] },
+      ...matchCurrency(filters),
+      ...clientProjectMatch(filters),
+      ...dateRange('issueDate', filters),
+    };
+    const expenseMatch: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      status: { $in: ['recorded', 'finalized'] },
+      ...matchCurrency(filters),
+      ...clientProjectMatch(filters),
+      ...dateRange('expenseDate', filters),
+    };
+
+    const [invoicedRows, creditRows, expenseRows, paymentRows] = await Promise.all([
+      AgencyInvoice.aggregate<{ _id: { y: number; m: number }; total: number }>([
+        { $match: invoiceMatch },
+        {
+          $group: {
+            _id: { y: { $year: '$issueDate' }, m: { $month: '$issueDate' } },
+            total: { $sum: '$grandTotalMinor' },
+          },
+        },
+      ]).exec(),
+      AgencyInvoice.aggregate<{ _id: { y: number; m: number }; total: number }>([
+        { $match: creditMatch },
+        {
+          $group: {
+            _id: { y: { $year: '$issueDate' }, m: { $month: '$issueDate' } },
+            total: { $sum: '$grandTotalMinor' },
+          },
+        },
+      ]).exec(),
+      AgencyExpense.aggregate<{ _id: { y: number; m: number }; total: number }>([
+        { $match: expenseMatch },
+        {
+          $group: {
+            _id: { y: { $year: '$expenseDate' }, m: { $month: '$expenseDate' } },
+            total: { $sum: '$amountMinor' },
+          },
+        },
+      ]).exec(),
+      AgencyPayment.aggregate<{ _id: { y: number; m: number }; total: number }>([
+        {
+          $match: {
+            isDeleted: { $ne: true },
+            status: 'confirmed',
+            refundOfPaymentId: null,
+            ...matchCurrency(filters),
+            ...(filters.clientId
+              ? { clientId: new Types.ObjectId(filters.clientId) }
+              : {}),
+            ...dateRange('paymentDate', filters),
+          },
+        },
+        {
+          $group: {
+            _id: { y: { $year: '$paymentDate' }, m: { $month: '$paymentDate' } },
+            total: { $sum: '$amountMinor' },
+          },
+        },
+      ]).exec(),
+    ]);
+
+    const mapKey = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}`;
+    const invoicedMap = new Map(invoicedRows.map((r) => [mapKey(r._id.y, r._id.m), r.total]));
+    const creditMap = new Map(creditRows.map((r) => [mapKey(r._id.y, r._id.m), r.total]));
+    const expenseMap = new Map(expenseRows.map((r) => [mapKey(r._id.y, r._id.m), r.total]));
+    const paymentMap = new Map(paymentRows.map((r) => [mapKey(r._id.y, r._id.m), r.total]));
+
+    const months: Array<{
+      month: string;
+      invoicedRevenueMinor: number;
+      expensesMinor: number;
+      confirmedPaymentsMinor: number;
+    }> = [];
+
+    const cursor = new Date(filters.from ?? new Date());
+    cursor.setUTCDate(1);
+    cursor.setUTCHours(0, 0, 0, 0);
+    const end = filters.to ? new Date(filters.to) : new Date();
+    end.setUTCDate(1);
+
+    // Safety: max 36 months
+    for (let i = 0; i < 36; i += 1) {
+      if (cursor > end) break;
+      const key = mapKey(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1);
+      const invoiced = invoicedMap.get(key) ?? 0;
+      const credits = creditMap.get(key) ?? 0;
+      months.push({
+        month: key,
+        invoicedRevenueMinor: invoiced - credits,
+        expensesMinor: expenseMap.get(key) ?? 0,
+        confirmedPaymentsMinor: paymentMap.get(key) ?? 0,
+      });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+
+    return { currency, months };
+  }
+
+  private async revenueByServiceCategory(filters: ReportFilters) {
+    const currency = filters.currency ?? DEFAULT_AGENCY_CURRENCY;
+    const projectCollection = AgencyProject.collection.name;
+
+    const baseMatch = {
+      isDeleted: { $ne: true },
+      ...matchCurrency(filters),
+      ...clientProjectMatch(filters),
+      ...dateRange('issueDate', filters),
+    };
+
+    const pipeline = (kind: 'invoice' | 'credit_note', statuses: Record<string, unknown>) => [
+      {
+        $match: {
+          ...baseMatch,
+          kind,
+          ...statuses,
+        },
+      },
+      {
+        $lookup: {
+          from: projectCollection,
+          localField: 'projectId',
+          foreignField: '_id',
+          as: 'project',
+        },
+      },
+      { $unwind: { path: '$project', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: {
+            $ifNull: [
+              { $cond: [{ $eq: ['$project.serviceCategory', ''] }, null, '$project.serviceCategory'] },
+              'uncategorized',
+            ],
+          },
+          totalMinor: { $sum: '$grandTotalMinor' },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+
+    const [invoiceRows, creditRows] = await Promise.all([
+      AgencyInvoice.aggregate<{ _id: string; totalMinor: number; count: number }>(
+        pipeline('invoice', { status: { $in: POSTED_INVOICE_STATUSES } }),
+      ).exec(),
+      AgencyInvoice.aggregate<{ _id: string; totalMinor: number; count: number }>(
+        pipeline('credit_note', { status: { $nin: ['draft', 'cancelled'] } }),
+      ).exec(),
+    ]);
+
+    const creditMap = new Map(creditRows.map((r) => [r._id || 'uncategorized', r.totalMinor]));
+    const categories = new Map<
+      string,
+      { serviceCategory: string; invoicedGrossMinor: number; creditNotesMinor: number; netMinor: number; invoiceCount: number }
+    >();
+
+    for (const row of invoiceRows) {
+      const key = row._id || 'uncategorized';
+      const credits = creditMap.get(key) ?? 0;
+      categories.set(key, {
+        serviceCategory: key,
+        invoicedGrossMinor: row.totalMinor,
+        creditNotesMinor: credits,
+        netMinor: row.totalMinor - credits,
+        invoiceCount: row.count,
+      });
+      creditMap.delete(key);
+    }
+    for (const [key, credits] of creditMap) {
+      categories.set(key, {
+        serviceCategory: key,
+        invoicedGrossMinor: 0,
+        creditNotesMinor: credits,
+        netMinor: -credits,
+        invoiceCount: 0,
+      });
+    }
+
+    const items = [...categories.values()].sort((a, b) => b.netMinor - a.netMinor);
+    return {
+      currency,
+      items,
+      totalNetMinor: items.reduce((s, i) => s + i.netMinor, 0),
+    };
+  }
+
+  private async upcomingRenewals(filters: ReportFilters, now: Date, withinDays: number) {
+    const until = new Date(now);
+    until.setUTCDate(until.getUTCDate() + withinDays);
+    const match: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      status: { $in: ['pending', 'reminded'] },
+      kind: { $in: ['domain', 'hosting', 'ssl'] },
+      dueDate: { $gte: now, $lte: until },
+    };
+    if (filters.clientId) match.clientId = new Types.ObjectId(filters.clientId);
+
+    const items = await AgencyRenewal.find(match).sort({ dueDate: 1 }).limit(25).exec();
+    const clientIds = [...new Set(items.map((i) => String(i.clientId)))];
+    const clients = await AgencyClient.find({ _id: { $in: clientIds } }).select('name code').exec();
+    const clientMap = new Map(clients.map((c) => [c.id, c]));
+
+    return {
+      withinDays,
+      count: items.length,
+      items: items.map((r) => {
+        const client = clientMap.get(String(r.clientId));
+        return {
+          id: r.id,
+          code: r.code,
+          kind: r.kind,
+          title: r.title,
+          dueDate: r.dueDate.toISOString(),
+          status: r.status,
+          clientId: String(r.clientId),
+          clientName: client?.name,
+          clientCode: client?.code,
+        };
+      }),
+    };
+  }
+
+  private async maintenanceExpiringSoon(filters: ReportFilters, now: Date, withinDays: number) {
+    const until = new Date(now);
+    until.setUTCDate(until.getUTCDate() + withinDays);
+    const match: Record<string, unknown> = {
+      isDeleted: { $ne: true },
+      status: { $in: ['active', 'expiring_soon'] },
+      $or: [
+        { endDate: { $gte: now, $lte: until } },
+        { renewalDate: { $gte: now, $lte: until } },
+        { status: 'expiring_soon' },
+      ],
+    };
+    if (filters.clientId) match.clientId = new Types.ObjectId(filters.clientId);
+    if (filters.projectId) match.projectId = new Types.ObjectId(filters.projectId);
+
+    const items = await MaintenanceAgreement.find(match).sort({ endDate: 1 }).limit(25).exec();
+    const clientIds = [...new Set(items.map((i) => String(i.clientId)))];
+    const clients = await AgencyClient.find({ _id: { $in: clientIds } }).select('name code').exec();
+    const clientMap = new Map(clients.map((c) => [c.id, c]));
+
+    return {
+      withinDays,
+      count: items.length,
+      items: items.map((a) => {
+        const client = clientMap.get(String(a.clientId));
+        return {
+          id: a.id,
+          code: a.code,
+          planName: a.planName,
+          status: a.status,
+          endDate: a.endDate?.toISOString(),
+          renewalDate: a.renewalDate?.toISOString(),
+          recurringChargeMinor: a.recurringChargeMinor,
+          currency: a.currency,
+          clientId: String(a.clientId),
+          clientName: client?.name,
+          projectId: a.projectId ? String(a.projectId) : null,
+        };
+      }),
+    };
+  }
+
+  async exportExecutiveDashboardCsv(filters: ReportFilters) {
+    const dash = await this.executiveDashboard(filters);
+    const csv = this.toCsv(
+      ['section', 'metric', 'value', 'unit', 'notes'],
+      [
+        ['operations', 'active_clients', dash.operations.activeClients, 'count', 'status=active'],
+        ['operations', 'projects_active', dash.operations.projectsActive, 'count', ''],
+        ['operations', 'projects_completed', dash.operations.projectsCompleted, 'count', ''],
+        [
+          'operations',
+          'projects_overdue',
+          dash.operations.projectsOverdue,
+          'count',
+          dash.operations.definitions.overdueProjects,
+        ],
+        [
+          'operations',
+          'quotations_awaiting_decision',
+          dash.operations.quotationsAwaitingDecision,
+          'count',
+          'status=issued',
+        ],
+        [
+          'finance',
+          'invoiced_revenue_net',
+          dash.finance.invoicedRevenueMinor,
+          dash.currency,
+          'invoice − credit notes',
+        ],
+        [
+          'finance',
+          'confirmed_payments_received',
+          dash.finance.confirmedPaymentsReceivedMinor,
+          dash.currency,
+          'excludes pending/failed/refunds',
+        ],
+        ['finance', 'refunds', dash.finance.refundsMinor, dash.currency, 'confirmed refunds'],
+        [
+          'finance',
+          'net_cash_received',
+          dash.finance.netCashReceivedMinor,
+          dash.currency,
+          'payments − refunds',
+        ],
+        [
+          'finance',
+          'outstanding_receivables',
+          dash.finance.outstandingReceivablesMinor,
+          dash.currency,
+          'balanceDueMinor',
+        ],
+        [
+          'finance',
+          'overdue_balance',
+          dash.finance.overdueBalanceMinor,
+          dash.currency,
+          `${dash.finance.overdueInvoiceCount} invoices`,
+        ],
+        [
+          'finance',
+          'recorded_expenses',
+          dash.finance.recordedExpensesMinor,
+          dash.currency,
+          'recorded+finalized',
+        ],
+        [
+          'finance',
+          'gross_margin_invoice_basis',
+          dash.finance.grossMarginInvoiceBasisMinor,
+          dash.currency,
+          'not cash profit',
+        ],
+        ...dash.monthlyTrends.months.map((m) => [
+          'trend',
+          m.month,
+          m.invoicedRevenueMinor,
+          dash.currency,
+          `expenses=${m.expensesMinor}; payments=${m.confirmedPaymentsMinor}`,
+        ]),
+        ...dash.revenueByServiceCategory.items.map((r) => [
+          'service_category',
+          r.serviceCategory,
+          r.netMinor,
+          dash.currency,
+          `gross=${r.invoicedGrossMinor}; credits=${r.creditNotesMinor}`,
+        ]),
+      ],
+    );
+    return { filename: `agency-executive-dashboard-${Date.now()}.csv`, csv };
+  }
+
+  async exportExecutiveDashboardPdf(filters: ReportFilters): Promise<{ filename: string; buffer: Buffer }> {
+    const dash = await this.executiveDashboard(filters);
+    const buffer = await buildExecutiveDashboardPdfBuffer({
+      currency: dash.currency as CurrencyCode,
+      generatedAt: dash.generatedAt,
+      filters: dash.filters,
+      operations: {
+        activeClients: dash.operations.activeClients,
+        projectsActive: dash.operations.projectsActive,
+        projectsCompleted: dash.operations.projectsCompleted,
+        projectsOverdue: dash.operations.projectsOverdue,
+        quotationsAwaitingDecision: dash.operations.quotationsAwaitingDecision,
+      },
+      finance: {
+        invoicedRevenueMinor: dash.finance.invoicedRevenueMinor,
+        confirmedPaymentsReceivedMinor: dash.finance.confirmedPaymentsReceivedMinor,
+        netCashReceivedMinor: dash.finance.netCashReceivedMinor,
+        outstandingReceivablesMinor: dash.finance.outstandingReceivablesMinor,
+        overdueBalanceMinor: dash.finance.overdueBalanceMinor,
+        recordedExpensesMinor: dash.finance.recordedExpensesMinor,
+        grossMarginInvoiceBasisMinor: dash.finance.grossMarginInvoiceBasisMinor,
+        refundsMinor: dash.finance.refundsMinor,
+      },
+      methodologyNote: dash.methodologyNote,
+    });
+    return { filename: `agency-executive-dashboard-${Date.now()}.pdf`, buffer };
   }
 }
 

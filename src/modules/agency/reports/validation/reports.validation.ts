@@ -9,5 +9,5 @@ export const reportFiltersSchema = paginationQuerySchema.extend({
   clientId: mongoIdSchema.optional(),
   projectId: mongoIdSchema.optional(),
   currency: currencySchema.optional(),
-  format: z.enum(['json', 'csv']).optional(),
+  format: z.enum(['json', 'csv', 'pdf']).optional(),
 });
