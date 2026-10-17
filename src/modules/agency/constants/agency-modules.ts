@@ -66,7 +66,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'invoices',
     title: 'Invoices',
     description: 'Client billing documents and balances.',
-    phase: 'next',
+    phase: 'foundation',
     readPermission: 'invoices:read',
   },
   {
@@ -74,7 +74,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'payments',
     title: 'Payments & Receipts',
     description: 'Payment records and receipts against invoices.',
-    phase: 'planned',
+    phase: 'foundation',
     readPermission: 'payments:read',
   },
   {

@@ -5,6 +5,7 @@ import { agencyController } from '../controller/agency.controller';
 import clientRoutes from '../clients/routes/client.routes';
 import projectRoutes from '../projects/routes/project.routes';
 import quotationRoutes from '../quotations/routes/quotation.routes';
+import billingRoutes from '../billing/routes/billing.routes';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.get('/foundation', authorize(Permission.AGENCY_READ), agencyController.ge
 router.use('/clients', clientRoutes);
 router.use('/projects', projectRoutes);
 router.use('/quotations', quotationRoutes);
+router.use(billingRoutes);
 
 export default router;
