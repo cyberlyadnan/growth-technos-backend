@@ -82,7 +82,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'expenses',
     title: 'Expenses',
     description: 'Agency and project expense tracking.',
-    phase: 'planned',
+    phase: 'foundation',
     readPermission: 'expenses:read',
   },
   {
@@ -114,7 +114,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'reports',
     title: 'Reports',
     description: 'Operational and financial summaries.',
-    phase: 'planned',
+    phase: 'foundation',
     readPermission: 'reports:read',
   },
 ];

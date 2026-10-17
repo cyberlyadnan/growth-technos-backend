@@ -119,6 +119,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.PAYMENTS_UPDATE,
     Permission.EXPENSES_READ,
     Permission.EXPENSES_CREATE,
+    Permission.EXPENSES_UPDATE,
+    Permission.EXPENSES_DELETE,
     Permission.DOCUMENTS_READ,
     Permission.DOCUMENTS_CREATE,
     Permission.MAINTENANCE_READ,
