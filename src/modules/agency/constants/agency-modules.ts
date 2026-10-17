@@ -58,7 +58,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'quotations',
     title: 'Quotations',
     description: 'Commercial proposals before invoicing.',
-    phase: 'next',
+    phase: 'foundation',
     readPermission: 'quotations:read',
   },
   {
@@ -66,7 +66,7 @@ export const AGENCY_MODULES: AgencyModuleDefinition[] = [
     slug: 'invoices',
     title: 'Invoices',
     description: 'Client billing documents and balances.',
-    phase: 'planned',
+    phase: 'next',
     readPermission: 'invoices:read',
   },
   {
