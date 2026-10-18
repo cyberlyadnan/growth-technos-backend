@@ -1,5 +1,5 @@
 import { UpdateQuery } from 'mongoose';
-import { ADMIN_ROLES, UserStatus } from '@core/constants';
+import { ADMIN_ROLES, PANEL_STAFF_ROLES, UserStatus } from '@core/constants';
 import { buildSearchFilter } from '@core/pagination/pagination';
 import { User, IUser } from '../model/user.model';
 
@@ -9,10 +9,20 @@ export interface FindAdminUsersOptions {
   sort: Record<string, 1 | -1>;
   search?: string;
   status?: UserStatus;
+  role?: string;
 }
 
 export class UserRepository {
-  private adminFilter(): Record<string, unknown> {
+  /** Staff directory: admins + marketing (not editor/manager/viewer unless added later). */
+  private staffFilter(): Record<string, unknown> {
+    return {
+      isDeleted: { $ne: true },
+      role: { $in: PANEL_STAFF_ROLES },
+    };
+  }
+
+  /** Active full administrators only — used for last-admin safety checks. */
+  private adminOnlyFilter(): Record<string, unknown> {
     return {
       isDeleted: { $ne: true },
       role: { $in: ADMIN_ROLES },
@@ -30,7 +40,7 @@ export class UserRepository {
   }
 
   async findAdminById(id: string): Promise<IUser | null> {
-    return User.findOne({ _id: id, ...this.adminFilter() }).exec();
+    return User.findOne({ _id: id, ...this.staffFilter() }).exec();
   }
 
   async findByIdWithPassword(id: string): Promise<IUser | null> {
@@ -52,7 +62,7 @@ export class UserRepository {
 
   async findAdmins(options: FindAdminUsersOptions): Promise<IUser[]> {
     const filter: Record<string, unknown> = {
-      ...this.adminFilter(),
+      ...this.staffFilter(),
       ...buildSearchFilter(options.search, ['firstName', 'lastName', 'email', 'phone']),
     };
 
@@ -60,17 +70,25 @@ export class UserRepository {
       filter.status = options.status;
     }
 
+    if (options.role) {
+      filter.role = options.role;
+    }
+
     return User.find(filter).sort(options.sort).skip(options.skip).limit(options.limit).exec();
   }
 
-  async countAdmins(options: Pick<FindAdminUsersOptions, 'search' | 'status'>): Promise<number> {
+  async countAdmins(options: Pick<FindAdminUsersOptions, 'search' | 'status' | 'role'>): Promise<number> {
     const filter: Record<string, unknown> = {
-      ...this.adminFilter(),
+      ...this.staffFilter(),
       ...buildSearchFilter(options.search, ['firstName', 'lastName', 'email', 'phone']),
     };
 
     if (options.status) {
       filter.status = options.status;
+    }
+
+    if (options.role) {
+      filter.role = options.role;
     }
 
     return User.countDocuments(filter);
@@ -78,7 +96,7 @@ export class UserRepository {
 
   async countActiveAdmins(excludeId?: string): Promise<number> {
     const filter: Record<string, unknown> = {
-      ...this.adminFilter(),
+      ...this.adminOnlyFilter(),
       status: UserStatus.ACTIVE,
     };
 

@@ -67,7 +67,7 @@ router.delete(
 );
 router.delete(
   '/:id/permanent',
-  authorize(Permission.CONTENT_DELETE),
+  authorize(Permission.CONTENT_PERMANENT_DELETE),
   validate(serviceIdParamSchema, 'params'),
   serviceController.permanentDelete,
 );

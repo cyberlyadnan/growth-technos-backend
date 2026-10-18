@@ -23,6 +23,7 @@ export interface ListAdminUsersQuery {
   order?: 'asc' | 'desc';
   search?: string;
   status?: UserStatus;
+  role?: string;
 }
 
 export interface CreateAdminUserDto {
@@ -32,6 +33,7 @@ export interface CreateAdminUserDto {
   password: string;
   phone?: string;
   avatar?: string;
+  role?: UserRole;
   status?: UserStatus;
 }
 
@@ -41,6 +43,7 @@ export interface UpdateAdminUserDto {
   email?: string;
   phone?: string;
   avatar?: string;
+  role?: UserRole;
   status?: UserStatus;
 }
 

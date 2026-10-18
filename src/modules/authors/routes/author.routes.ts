@@ -27,7 +27,7 @@ router.delete('/:id', authorize(Permission.CONTENT_DELETE), validate(authorIdPar
 router.post('/:id/restore', authorize(Permission.CONTENT_UPDATE), validate(authorIdParamSchema, 'params'), authorController.restore);
 router.delete(
   '/:id/permanent',
-  authorize(Permission.CONTENT_DELETE),
+  authorize(Permission.CONTENT_PERMANENT_DELETE),
   validate(authorIdParamSchema, 'params'),
   authorController.permanentDelete,
 );

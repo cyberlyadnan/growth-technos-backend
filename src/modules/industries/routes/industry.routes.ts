@@ -54,7 +54,7 @@ router.delete('/:id', authorize(Permission.CONTENT_DELETE), validate(taxonomyIdP
 router.post('/:id/restore', authorize(Permission.CONTENT_UPDATE), validate(taxonomyIdParamSchema, 'params'), controller.restore);
 router.delete(
   '/:id/permanent',
-  authorize(Permission.CONTENT_DELETE),
+  authorize(Permission.CONTENT_PERMANENT_DELETE),
   validate(taxonomyIdParamSchema, 'params'),
   controller.permanentDelete,
 );

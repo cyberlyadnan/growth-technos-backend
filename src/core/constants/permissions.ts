@@ -15,6 +15,8 @@ export enum Permission {
   CONTENT_UPDATE = 'content:update',
   CONTENT_DELETE = 'content:delete',
   CONTENT_PUBLISH = 'content:publish',
+  /** Hard/permanent content deletion — administrators only by default. */
+  CONTENT_PERMANENT_DELETE = 'content:permanent_delete',
 
   // CRM
   LEADS_READ = 'leads:read',
@@ -22,6 +24,12 @@ export enum Permission {
   LEADS_UPDATE = 'leads:update',
   LEADS_DELETE = 'leads:delete',
   LEADS_ASSIGN = 'leads:assign',
+
+  // Contacts / newsletter (reserved for dedicated CRM modules when wired)
+  CONTACTS_READ = 'contacts:read',
+  CONTACTS_UPDATE = 'contacts:update',
+  NEWSLETTER_READ = 'newsletter:read',
+  NEWSLETTER_UPDATE = 'newsletter:update',
 
   // Media
   MEDIA_READ = 'media:read',
@@ -81,10 +89,29 @@ export enum Permission {
   SYSTEM_ADMIN = 'system:admin',
 }
 
+/** Explicit allowlist for Marketing Staff — no agency or user-admin permissions. */
+export const MARKETING_PERMISSIONS: Permission[] = [
+  Permission.CONTENT_READ,
+  Permission.CONTENT_CREATE,
+  Permission.CONTENT_UPDATE,
+  Permission.CONTENT_DELETE,
+  Permission.CONTENT_PUBLISH,
+  Permission.MEDIA_READ,
+  Permission.MEDIA_UPLOAD,
+  Permission.LEADS_READ,
+  Permission.LEADS_UPDATE,
+  Permission.CONTACTS_READ,
+  Permission.CONTACTS_UPDATE,
+  Permission.NEWSLETTER_READ,
+  Permission.NEWSLETTER_UPDATE,
+  Permission.ANALYTICS_READ,
+];
+
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
   super_admin: Object.values(Permission),
   // All admins have full access today. Permissions remain on the user record for future RBAC.
   admin: Object.values(Permission),
+  marketing: [...MARKETING_PERMISSIONS],
   editor: [
     Permission.CONTENT_READ,
     Permission.CONTENT_CREATE,
@@ -147,3 +174,25 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.REPORTS_READ,
   ],
 };
+
+/**
+ * Resolve effective permissions for a role.
+ * Admin roles always receive the current full matrix (includes new AMS/CMS permissions as they grow).
+ * Marketing and other roles use an explicit allowlist; non-empty DB overrides are only honored
+ * for non-admin roles and are intersected with the role default to prevent privilege expansion.
+ */
+export function resolveRolePermissions(role: string, explicit?: string[]): string[] {
+  const defaults = DEFAULT_ROLE_PERMISSIONS[role] ?? [];
+
+  if (role === 'super_admin' || role === 'admin') {
+    return defaults.map(String);
+  }
+
+  if (!explicit || explicit.length === 0) {
+    return defaults.map(String);
+  }
+
+  const allowed = new Set(defaults.map(String));
+  const filtered = explicit.filter((perm) => allowed.has(perm));
+  return filtered.length > 0 ? filtered : defaults.map(String);
+}

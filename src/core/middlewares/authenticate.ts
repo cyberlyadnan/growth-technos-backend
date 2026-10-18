@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '@core/config';
-import { ADMIN_ROLES } from '@core/constants';
+import {
+  ADMIN_ROLES,
+  UserStatus,
+  resolveRolePermissions,
+} from '@core/constants';
 import { AuthenticationError, AuthorizationError } from '@core/errors';
 import { JwtPayload } from '@core/types';
 import { loggers } from '@core/logger';
+import { userRepository } from '@modules/users/repository/user.repository';
 
 function extractToken(req: Request): string | null {
   const authHeader = req.headers.authorization;
@@ -17,59 +22,69 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
-export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
-  try {
-    const token = extractToken(req);
+async function attachAuthenticatedUser(req: Request, token: string): Promise<void> {
+  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
 
-    if (!token) {
-      throw new AuthenticationError('Access token required');
-    }
-
-    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
-
-    if (decoded.type !== 'access') {
-      throw new AuthenticationError('Invalid token type');
-    }
-
-    req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-      permissions: decoded.permissions,
-    };
-
-    next();
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      next(error);
-      return;
-    }
-    loggers.auth.warn('Authentication failed', { error: (error as Error).message });
-    next(new AuthenticationError('Invalid or expired access token'));
+  if (decoded.type !== 'access') {
+    throw new AuthenticationError('Invalid token type');
   }
+
+  const user = await userRepository.findById(decoded.sub);
+  if (!user || user.status !== UserStatus.ACTIVE) {
+    loggers.security.warn('Authentication rejected — inactive or missing user', {
+      userId: decoded.sub,
+      status: user?.status,
+    });
+    throw new AuthenticationError('User account is not available');
+  }
+
+  const permissions = resolveRolePermissions(user.role, user.permissions);
+
+  req.user = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    permissions,
+  };
+}
+
+export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
+  void (async () => {
+    try {
+      const token = extractToken(req);
+
+      if (!token) {
+        throw new AuthenticationError('Access token required');
+      }
+
+      await attachAuthenticatedUser(req, token);
+      next();
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        next(error);
+        return;
+      }
+      loggers.auth.warn('Authentication failed', { error: (error as Error).message });
+      next(new AuthenticationError('Invalid or expired access token'));
+    }
+  })();
 };
 
 export const optionalAuthenticate = (req: Request, _res: Response, next: NextFunction): void => {
-  try {
-    const token = extractToken(req);
-    if (!token) {
-      next();
-      return;
-    }
+  void (async () => {
+    try {
+      const token = extractToken(req);
+      if (!token) {
+        next();
+        return;
+      }
 
-    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
-    if (decoded.type === 'access') {
-      req.user = {
-        id: decoded.sub,
-        email: decoded.email,
-        role: decoded.role,
-        permissions: decoded.permissions,
-      };
+      await attachAuthenticatedUser(req, token);
+      next();
+    } catch {
+      next();
     }
-    next();
-  } catch {
-    next();
-  }
+  })();
 };
 
 export const authorize =

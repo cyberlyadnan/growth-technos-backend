@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { DEFAULT_ROLE_PERMISSIONS, UserRole, UserStatus } from '@core/constants';
+import { resolveRolePermissions, UserRole, UserStatus } from '@core/constants';
 import {
   AuthenticationError,
   AuthorizationError,
@@ -46,7 +46,7 @@ export class AuthService {
       lastName: user.lastName,
       fullName: user.fullName,
       role: user.role,
-      permissions: user.permissions,
+      permissions: resolveRolePermissions(user.role, user.permissions),
       status: user.status,
       avatar: user.avatar,
       phone: user.phone,
@@ -58,12 +58,7 @@ export class AuthService {
   }
 
   private resolvePermissions(role: UserRole, explicit?: string[]): string[] {
-    // Admins always receive the current full permission set (includes AMS as it grows).
-    if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
-      return DEFAULT_ROLE_PERMISSIONS[role] ?? [];
-    }
-    if (explicit && explicit.length > 0) return explicit;
-    return DEFAULT_ROLE_PERMISSIONS[role] ?? [];
+    return resolveRolePermissions(role, explicit);
   }
 
   private getRefreshExpiresIn(rememberMe?: boolean): string {

@@ -72,7 +72,7 @@ router.delete(
 );
 router.delete(
   '/:id/permanent',
-  authorize(Permission.CONTENT_DELETE),
+  authorize(Permission.CONTENT_PERMANENT_DELETE),
   validate(portfolioIdParamSchema, 'params'),
   portfolioController.permanentDelete,
 );

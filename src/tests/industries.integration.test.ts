@@ -288,7 +288,7 @@ describe('Industries CMS — Admin workflow', () => {
   itMongo('rejects invalid create payloads', async () => {
     const agent = await loginAsAdmin();
 
-    const response = await agent.post('/api/v1/industries').send({ name: '' }).expect(400);
+    const response = await agent.post('/api/v1/industries').send({ name: '' }).expect(422);
 
     expect(response.body.success).toBe(false);
   });

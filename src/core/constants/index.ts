@@ -1,5 +1,16 @@
-export { UserRole, UserStatus, ROLE_HIERARCHY } from './roles';
-export { Permission, DEFAULT_ROLE_PERMISSIONS } from './permissions';
+export {
+  UserRole,
+  UserStatus,
+  ROLE_HIERARCHY,
+  ASSIGNABLE_STAFF_ROLES,
+  PANEL_STAFF_ROLES,
+} from './roles';
+export {
+  Permission,
+  DEFAULT_ROLE_PERMISSIONS,
+  MARKETING_PERMISSIONS,
+  resolveRolePermissions,
+} from './permissions';
 export {
   LeadType,
   LeadStatus,
@@ -18,7 +29,7 @@ export {
   PageType,
   DeviceType,
 } from './leads';
-export { ADMIN_ROLES, isAdminRole } from './auth';
+export { ADMIN_ROLES, isAdminRole, isPanelStaffRole, isMarketingRole } from './auth';
 export {
   BlogPublicationStatus,
   BlogDifficultyLevel,

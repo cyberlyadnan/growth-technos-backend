@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserStatus } from '@core/constants';
+import { UserRole, UserStatus } from '@core/constants';
 
 export const passwordSchema = z
   .string()
@@ -17,6 +17,9 @@ export const phoneSchema = z
   .optional()
   .or(z.literal(''));
 
+/** Roles assignable via admin user management — never includes super_admin. */
+const assignableRoleSchema = z.enum([UserRole.ADMIN, UserRole.MARKETING]);
+
 export const createAdminUserSchema = z.object({
   firstName: z.string().min(1).max(50).trim(),
   lastName: z.string().min(1).max(50).trim(),
@@ -24,6 +27,7 @@ export const createAdminUserSchema = z.object({
   password: passwordSchema,
   phone: phoneSchema,
   avatar: z.string().url().optional().or(z.literal('')),
+  role: assignableRoleSchema.optional().default(UserRole.ADMIN),
   status: z.nativeEnum(UserStatus).optional().default(UserStatus.ACTIVE),
 });
 
@@ -33,6 +37,7 @@ export const updateAdminUserSchema = z.object({
   email: z.string().email().toLowerCase().trim().optional(),
   phone: phoneSchema,
   avatar: z.string().url().optional().or(z.literal('')),
+  role: assignableRoleSchema.optional(),
   status: z.nativeEnum(UserStatus).optional(),
 });
 
@@ -47,6 +52,7 @@ export const listAdminUsersSchema = z.object({
   order: z.enum(['asc', 'desc']).optional(),
   search: z.string().optional(),
   status: z.nativeEnum(UserStatus).optional(),
+  role: z.string().optional(),
 });
 
 export const adminUserIdSchema = z.object({
