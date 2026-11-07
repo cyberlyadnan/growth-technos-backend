@@ -16,7 +16,7 @@ import {
 } from './cms-industries.data';
 import { seedIndustryPages } from './industry-pages.seeder';
 
-export const SITE_URL = (process.env.APP_URL ?? 'https://growthtechnos.com').replace(/\/$/, '');
+export const SITE_URL = (process.env.PUBLIC_SITE_URL ?? 'https://www.growthtechnos.com').replace(/\/$/, '');
 
 type RawSubService = {
   title: string;
@@ -81,7 +81,10 @@ type ProjectRecord = {
   };
 };
 
-function frontendRoot(): string {
+export function frontendRoot(): string {
+  if (process.env.FRONTEND_ROOT) return path.resolve(process.env.FRONTEND_ROOT);
+  const sibling = path.resolve(__dirname, '../../../../growth-technos-smart');
+  if (fs.existsSync(sibling)) return sibling;
   return path.resolve(__dirname, '../../../../frontend');
 }
 
