@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { CtaPlacement, WidgetPosition } from '@core/constants/leads';
 import { EntityStatus } from '@core/schemas/base.schema';
-import { mongoIdParamSchema, mongoIdSchema, paginationQuerySchema } from '@core/validation/common.validation';
+import {
+  mongoIdParamSchema,
+  mongoIdSchema,
+  paginationQuerySchema,
+} from '@core/validation/common.validation';
 import { ctaActionZod, displayRulesZod, publicOffersQuerySchema } from './offer.validation';
 
 const frequencyControlZod = z

@@ -89,6 +89,10 @@ export type SubmitLeadDto = {
   businessType?: string;
   serviceInterested?: string;
   monthlyBudget?: string;
+  projectBudget?: string;
+  projectTimeline?: string;
+  currentTools?: string[];
+  clientSubmittedAt?: string;
   city?: string;
   message?: string;
   consent?: boolean;
@@ -115,6 +119,7 @@ export type UpdateLeadDto = {
   status?: LeadStatus;
   priority?: LeadPriority;
   notes?: string;
+  lostReason?: string;
   assignedTo?: string | null;
   score?: number | null;
   scoreBreakdown?: IScoreBreakdown | null;
@@ -152,6 +157,10 @@ export type LeadResponse = {
   businessType?: string;
   serviceInterested?: string;
   monthlyBudget?: string;
+  projectBudget?: string;
+  projectTimeline?: string;
+  currentTools: string[];
+  clientSubmittedAt?: string | null;
   city?: string;
   message?: string;
   consent: boolean;
@@ -178,6 +187,7 @@ export type LeadResponse = {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: string[];
   notes?: string;
+  lostReason?: string;
   convertedClientId?: string | null;
   activityLog: LeadActivityResponse[];
   isDeleted?: boolean;

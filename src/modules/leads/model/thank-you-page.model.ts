@@ -8,10 +8,7 @@ import {
   publishStatusField,
 } from '@core/schemas/base.schema';
 import { ISeoFields, seoSchemaFields } from '@core/schemas/seo.schema';
-import {
-  IResourceLink,
-  resourceLinkSchema,
-} from '@core/schemas/lead-gen.schema';
+import { IResourceLink, resourceLinkSchema } from '@core/schemas/lead-gen.schema';
 
 export interface IThankYouNextStep {
   title: string;

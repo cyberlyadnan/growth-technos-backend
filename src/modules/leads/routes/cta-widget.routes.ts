@@ -62,9 +62,24 @@ function mountCrudRouter(options: {
 
   router.use(authenticate);
 
-  router.get('/', authorize(Permission.LEADS_READ), validate(options.listSchema, 'query'), controller.list);
-  router.post('/', authorize(Permission.LEADS_CREATE), validate(options.createSchema), controller.create);
-  router.get('/:id', authorize(Permission.LEADS_READ), validate(options.idSchema, 'params'), controller.getById);
+  router.get(
+    '/',
+    authorize(Permission.LEADS_READ),
+    validate(options.listSchema, 'query'),
+    controller.list,
+  );
+  router.post(
+    '/',
+    authorize(Permission.LEADS_CREATE),
+    validate(options.createSchema),
+    controller.create,
+  );
+  router.get(
+    '/:id',
+    authorize(Permission.LEADS_READ),
+    validate(options.idSchema, 'params'),
+    controller.getById,
+  );
   router.patch(
     '/:id',
     authorize(Permission.LEADS_UPDATE),

@@ -41,6 +41,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@googleapis/sheets": "^18.1.2",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.80.0",
     "cloudinary": "^2.10.0",

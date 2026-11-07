@@ -13,10 +13,7 @@ export const helmetMiddleware = helmet({
 });
 
 function getAllowedCorsOrigins(): string[] {
-  const configured = [
-    env.CLIENT_URL,
-    ...(env.CORS_ORIGINS?.split(',') ?? []),
-  ]
+  const configured = [env.CLIENT_URL, ...(env.CORS_ORIGINS?.split(',') ?? [])]
     .map((val) => val.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
@@ -29,8 +26,13 @@ function getAllowedCorsOrigins(): string[] {
     try {
       const url = new URL(origin);
       if (url.hostname.startsWith('www.')) {
-        origins.add(`${url.protocol}//${url.hostname.replace(/^www\./, '')}${url.port ? `:${url.port}` : ''}`);
-      } else if (!url.hostname.includes('localhost') && !url.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        origins.add(
+          `${url.protocol}//${url.hostname.replace(/^www\./, '')}${url.port ? `:${url.port}` : ''}`,
+        );
+      } else if (
+        !url.hostname.includes('localhost') &&
+        !url.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)
+      ) {
         origins.add(`${url.protocol}//www.${url.hostname}${url.port ? `:${url.port}` : ''}`);
       }
     } catch {
@@ -44,7 +46,8 @@ function getAllowedCorsOrigins(): string[] {
 const allowedCorsOrigins = getAllowedCorsOrigins();
 
 const GROWTH_TECHNOS_DOMAIN_REGEX = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)?growth-?technos\.com$/;
-const VERCEL_PREVIEW_REGEX = /^https:\/\/(?:[a-zA-Z0-9-]+-)?growth-?technos(?:-[a-zA-Z0-9-]+)?\.vercel\.app$/;
+const VERCEL_PREVIEW_REGEX =
+  /^https:\/\/(?:[a-zA-Z0-9-]+-)?growth-?technos(?:-[a-zA-Z0-9-]+)?\.vercel\.app$/;
 
 export const corsMiddleware = cors({
   origin(origin, callback) {
@@ -128,6 +131,22 @@ export const commentRateLimiter = rateLimit({
   message: {
     success: false,
     message: 'Too many comment actions, please try again later',
+    data: null,
+    errors: [],
+    meta: null,
+  },
+});
+
+/** Public lead form: per-IP limit so the form cannot be used to spam the inbox/Sheet. */
+export const leadSubmitRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.LEAD_SUBMIT_RATE_LIMIT ?? 5),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message:
+      'Too many submissions from this network. Please try again in a few minutes or message us on WhatsApp.',
     data: null,
     errors: [],
     meta: null,

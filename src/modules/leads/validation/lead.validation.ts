@@ -122,6 +122,13 @@ export const submitLeadSchema = z
     businessType: optionalTrimmed(120),
     serviceInterested: optionalTrimmed(200),
     monthlyBudget: optionalTrimmed(80),
+    projectBudget: optionalTrimmed(80),
+    projectTimeline: optionalTrimmed(120),
+    currentTools: z.array(z.string().max(80).trim()).max(10).optional(),
+    clientSubmittedAt: z.preprocess(
+      (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+      z.string().datetime({ offset: true }).optional(),
+    ),
     city: optionalTrimmed(120),
     message: optionalTrimmed(5000),
     consent: z.boolean().optional(),
@@ -162,6 +169,7 @@ export const updateLeadSchema = z.object({
   status: z.nativeEnum(LeadStatus).optional(),
   priority: z.nativeEnum(LeadPriority).optional(),
   notes: z.string().max(5000).trim().optional(),
+  lostReason: z.string().max(1000).trim().optional(),
   assignedTo: mongoIdSchema.nullable().optional(),
   score: z.number().min(0).max(100).nullable().optional(),
   scoreBreakdown: z

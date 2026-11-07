@@ -127,15 +127,11 @@ export class LeadController {
   });
 
   convertToClient = asyncHandler(async (req: Request, res: Response) => {
-    const client = await clientService.convertFromLead(
-      String(req.params.id),
-      req.body,
-      {
-        id: req.user!.id,
-        role: req.user!.role,
-        fullName: req.user!.email,
-      },
-    );
+    const client = await clientService.convertFromLead(String(req.params.id), req.body, {
+      id: req.user!.id,
+      role: req.user!.role,
+      fullName: req.user!.email,
+    });
     sendCreated(res, client, 'Lead converted to client successfully');
   });
 }

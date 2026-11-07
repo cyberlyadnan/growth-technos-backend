@@ -11,6 +11,7 @@ export enum LeadType {
   PROPOSAL = 'proposal',
   LEAD_MAGNET = 'lead_magnet',
   OFFER = 'offer',
+  PROCESS_AUDIT = 'process_audit',
 }
 
 export enum LeadStatus {
@@ -141,11 +142,20 @@ export enum CampaignStatus {
 }
 
 export enum LeadEventType {
+  SHEETS = 'sheets',
   EMAIL = 'email',
+  CONFIRMATION_EMAIL = 'confirmation_email',
+  TELEGRAM = 'telegram',
   WHATSAPP = 'whatsapp',
   CRM = 'crm',
   ANALYTICS = 'analytics',
 }
+
+/** Budget ranges offered on the Free Process Audit form. */
+export const LEAD_BUDGET_OPTIONS = ['Under ₹30k', '₹30k–75k', '₹75k–1.5L', '₹1.5L+'] as const;
+
+/** Current tools options on the Free Process Audit form. */
+export const LEAD_CURRENT_TOOLS = ['Excel', 'Tally', 'Zoho', 'Other software', 'Paper'] as const;
 
 export enum PageType {
   HOME = 'home',

@@ -3,7 +3,11 @@ import { PopupTrigger } from '@core/constants/leads';
 import { EntityStatus } from '@core/schemas/base.schema';
 import { IDisplayRules, IFrequencyControl } from '@core/schemas/lead-gen.schema';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import {
   IPopupCampaign,
@@ -11,11 +15,7 @@ import {
   IPopupTriggerConfig,
   PopupCampaign,
 } from '../model/popup-campaign.model';
-import {
-  DisplayContext,
-  matchesDisplayRules,
-  sortByPriorityDesc,
-} from '../utils/display-rules';
+import { DisplayContext, matchesDisplayRules, sortByPriorityDesc } from '../utils/display-rules';
 
 export type CreatePopupDto = {
   name: string;
@@ -103,10 +103,7 @@ function mapPopup(doc: IPopupCampaign): PopupResponse {
   };
 }
 
-function mergeDisplayRules(
-  existing: IDisplayRules,
-  patch?: Partial<IDisplayRules>,
-): IDisplayRules {
+function mergeDisplayRules(existing: IDisplayRules, patch?: Partial<IDisplayRules>): IDisplayRules {
   if (!patch) return existing;
   return {
     industries: patch.industries ?? existing.industries,
@@ -246,10 +243,18 @@ export class PopupService {
       doc.content = {
         headline: next.headline ?? doc.content?.headline,
         body: next.body ?? doc.content?.body,
-        formId: dto.content.formId !== undefined ? (toObjectId(dto.content.formId) ?? null) : doc.content?.formId,
-        offerId: dto.content.offerId !== undefined ? (toObjectId(dto.content.offerId) ?? null) : doc.content?.offerId,
+        formId:
+          dto.content.formId !== undefined
+            ? (toObjectId(dto.content.formId) ?? null)
+            : doc.content?.formId,
+        offerId:
+          dto.content.offerId !== undefined
+            ? (toObjectId(dto.content.offerId) ?? null)
+            : doc.content?.offerId,
         magnetId:
-          dto.content.magnetId !== undefined ? (toObjectId(dto.content.magnetId) ?? null) : doc.content?.magnetId,
+          dto.content.magnetId !== undefined
+            ? (toObjectId(dto.content.magnetId) ?? null)
+            : doc.content?.magnetId,
         imageUrl: next.imageUrl ?? doc.content?.imageUrl,
       };
     }

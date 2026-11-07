@@ -8,6 +8,7 @@ export interface SendMailOptions {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }
 
 class MailService {
@@ -47,6 +48,7 @@ class MailService {
       subject: options.subject,
       html: options.html,
       text: options.text,
+      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
     });
   }
 }

@@ -43,7 +43,11 @@ export class StickyCtaController {
   });
 
   create = asyncHandler(async (req: Request, res: Response) => {
-    sendCreated(res, await stickyCtaService.create(req.body, req.user!.id), 'Sticky CTA created successfully');
+    sendCreated(
+      res,
+      await stickyCtaService.create(req.body, req.user!.id),
+      'Sticky CTA created successfully',
+    );
   });
 
   update = asyncHandler(async (req: Request, res: Response) => {
@@ -155,7 +159,10 @@ export class ContactWidgetController {
   });
 
   listPublic = asyncHandler(async (req: Request, res: Response) => {
-    sendSuccess(res, await contactWidgetService.getPublishedForContext(contextFromQuery(req.query)));
+    sendSuccess(
+      res,
+      await contactWidgetService.getPublishedForContext(contextFromQuery(req.query)),
+    );
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {
@@ -215,7 +222,10 @@ export class WhatsAppWidgetController {
   });
 
   listPublic = asyncHandler(async (req: Request, res: Response) => {
-    sendSuccess(res, await whatsappWidgetService.getPublishedForContext(contextFromQuery(req.query)));
+    sendSuccess(
+      res,
+      await whatsappWidgetService.getPublishedForContext(contextFromQuery(req.query)),
+    );
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {

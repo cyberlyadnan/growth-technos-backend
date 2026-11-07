@@ -3,7 +3,9 @@ import { CtaActionType, DeviceType } from '@core/constants/leads';
 import { ICtaAction, IDisplayRules, IFrequencyControl } from '@core/schemas/lead-gen.schema';
 import { DisplayContext } from '../utils/display-rules';
 
-export function toObjectId(value: string | Types.ObjectId | null | undefined): Types.ObjectId | null | undefined {
+export function toObjectId(
+  value: string | Types.ObjectId | null | undefined,
+): Types.ObjectId | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || value === '') return null;
   if (value instanceof Types.ObjectId) return value;
@@ -84,11 +86,20 @@ export function patchCtaAction(
     type: input.type ?? existing?.type ?? fallback,
     label: input.label !== undefined ? input.label : existing?.label,
     url: input.url !== undefined ? input.url : existing?.url,
-    formId: input.formId !== undefined ? (toObjectId(input.formId) ?? null) : (existing?.formId ?? null),
-    offerId: input.offerId !== undefined ? (toObjectId(input.offerId) ?? null) : (existing?.offerId ?? null),
+    formId:
+      input.formId !== undefined ? (toObjectId(input.formId) ?? null) : (existing?.formId ?? null),
+    offerId:
+      input.offerId !== undefined
+        ? (toObjectId(input.offerId) ?? null)
+        : (existing?.offerId ?? null),
     magnetId:
-      input.magnetId !== undefined ? (toObjectId(input.magnetId) ?? null) : (existing?.magnetId ?? null),
-    popupId: input.popupId !== undefined ? (toObjectId(input.popupId) ?? null) : (existing?.popupId ?? null),
+      input.magnetId !== undefined
+        ? (toObjectId(input.magnetId) ?? null)
+        : (existing?.magnetId ?? null),
+    popupId:
+      input.popupId !== undefined
+        ? (toObjectId(input.popupId) ?? null)
+        : (existing?.popupId ?? null),
     phone: input.phone !== undefined ? input.phone : existing?.phone,
     whatsappNumber:
       input.whatsappNumber !== undefined ? input.whatsappNumber : existing?.whatsappNumber,

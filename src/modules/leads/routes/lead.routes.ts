@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Permission } from '@core/constants';
 import { authenticate, authorize, publicCacheMiddleware, validate } from '@core/middlewares';
+import { leadSubmitRateLimiter } from '@core/middlewares/security';
 import { leadController } from '../controller/lead.controller';
 import { magnetRoutes, offerRoutes } from './offer.routes';
 import { popupRoutes } from './popup.routes';
@@ -39,7 +40,12 @@ router.get(
 );
 
 /** Public: submit a lead against a published form */
-router.post('/submit', validate(submitLeadSchema), leadController.submitLead);
+router.post(
+  '/submit',
+  leadSubmitRateLimiter,
+  validate(submitLeadSchema),
+  leadController.submitLead,
+);
 
 /** Conversion chrome (nested routers own public + admin auth) */
 router.use('/offers', offerRoutes);

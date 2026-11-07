@@ -1,3 +1,5 @@
+import type { HydratedDocument } from 'mongoose';
+import { loggers } from '@core/logger';
 import { Types } from 'mongoose';
 import {
   LeadActivityType,
@@ -7,7 +9,11 @@ import {
   LeadType,
 } from '@core/constants/leads';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { EntityStatus } from '@core/schemas/base.schema';
 import { ILead, ILeadActivityEntry, Lead } from '../model/lead.model';
@@ -32,7 +38,9 @@ function toObjectId(value: string | null | undefined): Types.ObjectId | null | u
   return new Types.ObjectId(value);
 }
 
-function mapCustomFields(fields: Map<string, unknown> | Record<string, unknown> | undefined): Record<string, unknown> {
+function mapCustomFields(
+  fields: Map<string, unknown> | Record<string, unknown> | undefined,
+): Record<string, unknown> {
   if (!fields) return {};
   if (fields instanceof Map) {
     return Object.fromEntries(fields.entries());
@@ -48,7 +56,10 @@ function mapActivity(entry: ILeadActivityEntry & { _id?: Types.ObjectId }): Lead
     meta: entry.meta,
     createdBy: entry.createdBy?.toString() ?? null,
     createdByName: entry.createdByName,
-    createdAt: (entry.createdAt instanceof Date ? entry.createdAt : new Date(entry.createdAt)).toISOString(),
+    createdAt: (entry.createdAt instanceof Date
+      ? entry.createdAt
+      : new Date(entry.createdAt)
+    ).toISOString(),
   };
 }
 
@@ -85,6 +96,10 @@ function mapLead(doc: ILead): LeadResponse {
     businessType: doc.businessType,
     serviceInterested: doc.serviceInterested,
     monthlyBudget: doc.monthlyBudget,
+    projectBudget: doc.projectBudget,
+    projectTimeline: doc.projectTimeline,
+    currentTools: doc.currentTools ?? [],
+    clientSubmittedAt: doc.clientSubmittedAt ? doc.clientSubmittedAt.toISOString() : null,
     city: doc.city,
     message: doc.message,
     consent: doc.consent,
@@ -111,6 +126,7 @@ function mapLead(doc: ILead): LeadResponse {
     scoreBreakdown: doc.scoreBreakdown ?? null,
     eventsTriggered: doc.eventsTriggered ?? [],
     notes: doc.notes,
+    lostReason: doc.lostReason,
     convertedClientId: doc.convertedClientId ? String(doc.convertedClientId) : null,
     activityLog: [...(doc.activityLog ?? [])]
       .map((entry) => mapActivity(entry as ILeadActivityEntry & { _id?: Types.ObjectId }))
@@ -135,6 +151,8 @@ function validateAgainstFormFields(
     'businessType',
     'serviceInterested',
     'monthlyBudget',
+    'projectBudget',
+    'projectTimeline',
     'city',
     'message',
     'consent',
@@ -316,81 +334,115 @@ export class LeadService {
       }
     }
 
-    const lead = await Lead.create({
+    // 1) Save to MongoDB. If this fails, we still notify (Sheets/email/Telegram) and the
+    //    visitor still sees success; the failure is logged for follow-up.
+    let lead: HydratedDocument<ILead> | null = null;
+    try {
+      lead = await Lead.create({
+        name: dto.name,
+        businessName: dto.businessName,
+        email: dto.email,
+        phone: dto.phone,
+        whatsapp: dto.whatsapp,
+        industry: dto.industry,
+        businessType: dto.businessType,
+        serviceInterested: dto.serviceInterested,
+        monthlyBudget: dto.monthlyBudget,
+        projectBudget: dto.projectBudget,
+        projectTimeline: dto.projectTimeline,
+        currentTools: dto.currentTools ?? [],
+        clientSubmittedAt: dto.clientSubmittedAt ? new Date(dto.clientSubmittedAt) : null,
+        city: dto.city,
+        message: dto.message,
+        consent: dto.consent ?? false,
+        customFields: dto.customFields ?? {},
+        leadType,
+        source: dto.source ?? LeadSource.WEBSITE,
+        status: LeadStatus.NEW,
+        campaignId: toObjectId(dto.campaignId) ?? null,
+        formId: form?._id ?? null,
+        offerId: toObjectId(dto.offerId) ?? null,
+        magnetId: toObjectId(dto.magnetId) ?? null,
+        popupId: toObjectId(dto.popupId) ?? null,
+        landingPage: dto.landingPage,
+        referrer: dto.referrer,
+        utm: dto.utm ?? {},
+        ip: client.ip,
+        userAgent: client.userAgent,
+        browser: client.browser,
+        device: client.device,
+        location: client.location ?? null,
+        eventsTriggered: [],
+        score: null,
+        scoreBreakdown: null,
+        priority: LeadPriority.MEDIUM,
+        activityLog: [
+          {
+            type: LeadActivityType.CREATED,
+            message: form
+              ? 'Lead created from website submission'
+              : 'Lead created from website submission (no published form matched)',
+            createdAt: new Date(),
+          },
+        ],
+      });
+    } catch (error) {
+      loggers.api.error('Lead save to MongoDB failed; continuing with notifications', {
+        error: error instanceof Error ? error.message : String(error),
+        email: dto.email,
+        phone: dto.phone,
+      });
+    }
+
+    const leadId = lead?.id ?? `unsaved-${new Types.ObjectId().toString()}`;
+
+    // 2–5) Sheets → notify email → confirmation email → Telegram (+ optional webhooks).
+    //      Runs in the background so the visitor gets an instant response; every step is
+    //      independent and failures are only logged.
+    const payload = {
+      leadId,
+      savedToDatabase: Boolean(lead),
+      formId: form?.id,
+      formSlug: form?.slug ?? dto.formSlug,
       name: dto.name,
-      businessName: dto.businessName,
       email: dto.email,
       phone: dto.phone,
       whatsapp: dto.whatsapp,
+      businessName: dto.businessName,
       industry: dto.industry,
-      businessType: dto.businessType,
       serviceInterested: dto.serviceInterested,
       monthlyBudget: dto.monthlyBudget,
+      projectBudget: dto.projectBudget,
+      projectTimeline: dto.projectTimeline,
+      currentTools: dto.currentTools ?? [],
+      clientSubmittedAt: dto.clientSubmittedAt,
       city: dto.city,
       message: dto.message,
-      consent: dto.consent ?? false,
-      customFields: dto.customFields ?? {},
       leadType,
       source: dto.source ?? LeadSource.WEBSITE,
-      status: LeadStatus.NEW,
-      campaignId: toObjectId(dto.campaignId) ?? null,
-      formId: form?._id ?? null,
-      offerId: toObjectId(dto.offerId) ?? null,
-      magnetId: toObjectId(dto.magnetId) ?? null,
-      popupId: toObjectId(dto.popupId) ?? null,
       landingPage: dto.landingPage,
       referrer: dto.referrer,
       utm: dto.utm ?? {},
-      ip: client.ip,
-      userAgent: client.userAgent,
-      browser: client.browser,
-      device: client.device,
-      location: client.location ?? null,
-      eventsTriggered: [],
-      score: null,
-      scoreBreakdown: null,
-      priority: LeadPriority.MEDIUM,
-      activityLog: [
-        {
-          type: LeadActivityType.CREATED,
-          message: form
-            ? 'Lead created from website submission'
-            : 'Lead created from website submission (no published form matched)',
-          createdAt: new Date(),
-        },
-      ],
-    });
-
-    const eventResult = await dispatchLeadSubmittedEvents({
-      leadId: lead.id,
-      formId: form?.id,
-      formSlug: form?.slug ?? dto.formSlug,
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      whatsapp: lead.whatsapp,
-      businessName: lead.businessName,
-      industry: lead.industry,
-      serviceInterested: lead.serviceInterested,
-      monthlyBudget: lead.monthlyBudget,
-      city: lead.city,
-      message: lead.message,
-      leadType: lead.leadType,
-      source: lead.source,
-      landingPage: lead.landingPage,
-      referrer: lead.referrer,
-      utm: lead.utm,
-      campaignId: lead.campaignId?.toString(),
-      offerId: lead.offerId?.toString(),
-      magnetId: lead.magnetId?.toString(),
-      popupId: lead.popupId?.toString(),
+      campaignId: dto.campaignId,
+      offerId: dto.offerId,
+      magnetId: dto.magnetId,
+      popupId: dto.popupId,
       occurredAt: new Date().toISOString(),
-    });
-
-    if (eventResult.triggered.length) {
-      lead.eventsTriggered = eventResult.triggered;
-      await lead.save();
-    }
+    };
+    const savedLead = lead;
+    void dispatchLeadSubmittedEvents(payload)
+      .then(async (eventResult) => {
+        if (savedLead && eventResult.triggered.length) {
+          savedLead.eventsTriggered = eventResult.triggered;
+          await savedLead.save();
+        }
+      })
+      .catch((error) => {
+        loggers.api.error('Lead event dispatch failed', {
+          leadId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
 
     let successMessage: SubmitLeadResult['successMessage'] = null;
     if (form?.successMessageId) {
@@ -407,7 +459,7 @@ export class LeadService {
     if (!successMessage) {
       successMessage = {
         headline: 'Thank you — we received your inquiry',
-        body: "No spam. We'll only contact you regarding your inquiry. Usually responds within 30 minutes during business hours.",
+        body: "No spam. We'll only contact you about your inquiry. We reply within one business day.",
       };
     }
 
@@ -427,17 +479,17 @@ export class LeadService {
     }
 
     return {
-      leadId: lead.id,
+      leadId,
       successMessage,
       redirect,
-      eventsTriggered: lead.eventsTriggered ?? [],
+      eventsTriggered: [],
       analytics: {
         event: 'lead_submit',
-        leadId: lead.id,
+        leadId,
         formSlug: form?.slug ?? dto.formSlug,
-        industry: lead.industry,
-        serviceInterested: lead.serviceInterested,
-        source: lead.source,
+        industry: dto.industry,
+        serviceInterested: dto.serviceInterested,
+        source: dto.source ?? LeadSource.WEBSITE,
       },
     };
   }
@@ -491,6 +543,16 @@ export class LeadService {
         type: LeadActivityType.ASSIGNED,
         message: dto.assignedTo ? 'Lead assigned' : 'Lead unassigned',
         meta: { assignedTo: dto.assignedTo },
+        userId,
+        userName,
+      });
+    }
+
+    if (dto.lostReason !== undefined && dto.lostReason !== doc.lostReason) {
+      doc.lostReason = dto.lostReason;
+      pushActivity(doc, {
+        type: LeadActivityType.NOTE_ADDED,
+        message: `Lost reason: ${dto.lostReason.slice(0, 180)}`,
         userId,
         userName,
       });

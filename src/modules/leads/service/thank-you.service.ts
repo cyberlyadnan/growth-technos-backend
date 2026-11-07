@@ -3,7 +3,11 @@ import { CtaActionType, ThankYouPageType } from '@core/constants/leads';
 import { EntityStatus } from '@core/schemas/base.schema';
 import { ICtaAction, IResourceLink } from '@core/schemas/lead-gen.schema';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { ensureUniqueSlug, slugify } from '@core/utils/slug';
 import { IThankYouNextStep, IThankYouPage, ThankYouPage } from '../model/thank-you-page.model';
@@ -186,7 +190,11 @@ export class ThankYouPageService {
     return mapThankYou(doc);
   }
 
-  async update(id: string, dto: Partial<CreateThankYouDto>, userId: string): Promise<ThankYouPageResponse> {
+  async update(
+    id: string,
+    dto: Partial<CreateThankYouDto>,
+    userId: string,
+  ): Promise<ThankYouPageResponse> {
     const doc = await ThankYouPage.findById(id);
     if (!doc) throw new NotFoundError('Thank you page not found');
 
@@ -196,7 +204,8 @@ export class ThankYouPageService {
     if (dto.timelineText !== undefined) doc.timelineText = dto.timelineText;
     if (dto.downloadLinks !== undefined) doc.downloadLinks = dto.downloadLinks;
     if (dto.relatedResources !== undefined) doc.relatedResources = dto.relatedResources;
-    if (dto.calendarEmbedUrl !== undefined) doc.calendarEmbedUrl = dto.calendarEmbedUrl || undefined;
+    if (dto.calendarEmbedUrl !== undefined)
+      doc.calendarEmbedUrl = dto.calendarEmbedUrl || undefined;
     if (dto.metaTitle !== undefined) doc.metaTitle = dto.metaTitle;
     if (dto.metaDescription !== undefined) doc.metaDescription = dto.metaDescription;
     if (dto.indexable !== undefined) doc.indexable = dto.indexable;
@@ -265,7 +274,9 @@ export class ThankYouPageService {
 }
 
 export class SuccessMessageService {
-  async list(query: ListQuery): Promise<{ messages: SuccessMessageResponse[]; meta: PaginationMeta }> {
+  async list(
+    query: ListQuery,
+  ): Promise<{ messages: SuccessMessageResponse[]; meta: PaginationMeta }> {
     const { page, limit, skip, sort } = parsePaginationQuery(query);
     const filter: Record<string, unknown> = {
       ...buildSearchFilter(query.search, ['name', 'headline', 'body']),
@@ -312,7 +323,11 @@ export class SuccessMessageService {
     return mapSuccess(doc);
   }
 
-  async update(id: string, dto: Partial<CreateSuccessDto>, userId: string): Promise<SuccessMessageResponse> {
+  async update(
+    id: string,
+    dto: Partial<CreateSuccessDto>,
+    userId: string,
+  ): Promise<SuccessMessageResponse> {
     const doc = await SuccessMessage.findById(id);
     if (!doc) throw new NotFoundError('Success message not found');
     if (dto.name !== undefined) doc.name = dto.name;

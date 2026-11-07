@@ -2,7 +2,11 @@ import { Types } from 'mongoose';
 import { FormFieldType } from '@core/constants/leads';
 import { EntityStatus } from '@core/schemas/base.schema';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { ensureUniqueSlug, slugify } from '@core/utils/slug';
 import { ILeadForm, LeadForm } from '../model/lead-form.model';
@@ -55,7 +59,9 @@ function mapPublicForm(doc: ILeadForm): PublicLeadFormResponse {
 }
 
 export class LeadFormService {
-  async list(query: ListLeadFormsQuery): Promise<{ forms: LeadFormResponse[]; meta: PaginationMeta }> {
+  async list(
+    query: ListLeadFormsQuery,
+  ): Promise<{ forms: LeadFormResponse[]; meta: PaginationMeta }> {
     const { page, limit, skip, sort } = parsePaginationQuery(query);
     const filter: Record<string, unknown> = {
       ...buildSearchFilter(query.search, ['name', 'slug', 'title', 'description']),

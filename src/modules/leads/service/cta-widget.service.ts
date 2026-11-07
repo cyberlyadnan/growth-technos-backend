@@ -4,17 +4,17 @@ import { CtaActionType, CtaPlacement, WidgetPosition } from '@core/constants/lea
 import { EntityStatus } from '@core/schemas/base.schema';
 import { ICtaAction, IDisplayRules, IFrequencyControl } from '@core/schemas/lead-gen.schema';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { IStickyCtaCampaign, StickyCtaCampaign } from '../model/sticky-cta.model';
 import { IFloatingCta, FloatingCta } from '../model/floating-cta.model';
 import { IContactWidget, ContactWidget } from '../model/contact-widget.model';
 import { IWhatsAppWidget, WhatsAppWidget } from '../model/whatsapp-widget.model';
-import {
-  DisplayContext,
-  matchesDisplayRules,
-  sortByPriorityDesc,
-} from '../utils/display-rules';
+import { DisplayContext, matchesDisplayRules, sortByPriorityDesc } from '../utils/display-rules';
 import {
   CtaActionInput,
   buildCtaAction,
@@ -281,8 +281,7 @@ export class StickyCtaService {
 
     const matched = docs.filter(
       (doc) =>
-        matchesDisplayRules(doc.displayRules, context) &&
-        matchesDeviceVisibility(context, doc),
+        matchesDisplayRules(doc.displayRules, context) && matchesDeviceVisibility(context, doc),
     );
     return sortByPriorityDesc(matched).slice(0, limit).map(mapSticky);
   }
@@ -318,7 +317,8 @@ export class StickyCtaService {
     if (dto.priority !== undefined) doc.priority = dto.priority;
     if (dto.campaignId !== undefined) doc.campaignId = toObjectId(dto.campaignId) ?? null;
     if (dto.status !== undefined) doc.status = dto.status;
-    if (dto.displayRules !== undefined) doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
+    if (dto.displayRules !== undefined)
+      doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
     if (dto.frequencyControl !== undefined) {
       doc.frequencyControl = { ...doc.frequencyControl, ...dto.frequencyControl };
     }
@@ -393,8 +393,7 @@ export class FloatingCtaService {
 
     const matched = docs.filter(
       (doc) =>
-        matchesDisplayRules(doc.displayRules, context) &&
-        matchesDeviceVisibility(context, doc),
+        matchesDisplayRules(doc.displayRules, context) && matchesDeviceVisibility(context, doc),
     );
     return sortByPriorityDesc(matched).slice(0, limit).map(mapFloating);
   }
@@ -428,7 +427,8 @@ export class FloatingCtaService {
     if (dto.priority !== undefined) doc.priority = dto.priority;
     if (dto.campaignId !== undefined) doc.campaignId = toObjectId(dto.campaignId) ?? null;
     if (dto.status !== undefined) doc.status = dto.status;
-    if (dto.displayRules !== undefined) doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
+    if (dto.displayRules !== undefined)
+      doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
     if (dto.frequencyControl !== undefined) {
       doc.frequencyControl = { ...doc.frequencyControl, ...dto.frequencyControl };
     }
@@ -536,7 +536,8 @@ export class ContactWidgetService {
     if (dto.hoursNote !== undefined) doc.hoursNote = dto.hoursNote;
     if (dto.priority !== undefined) doc.priority = dto.priority;
     if (dto.status !== undefined) doc.status = dto.status;
-    if (dto.displayRules !== undefined) doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
+    if (dto.displayRules !== undefined)
+      doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
     if (dto.ctaAction !== undefined) {
       doc.ctaAction = patchCtaAction(doc.ctaAction, dto.ctaAction, CtaActionType.CALL);
     }
@@ -652,7 +653,8 @@ export class WhatsAppWidgetService {
     if (dto.hoursNote !== undefined) doc.hoursNote = dto.hoursNote;
     if (dto.priority !== undefined) doc.priority = dto.priority;
     if (dto.status !== undefined) doc.status = dto.status;
-    if (dto.displayRules !== undefined) doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
+    if (dto.displayRules !== undefined)
+      doc.displayRules = mergeDisplayRules(doc.displayRules, dto.displayRules);
     if (dto.ctaAction !== undefined) {
       doc.ctaAction = patchCtaAction(doc.ctaAction, dto.ctaAction, CtaActionType.WHATSAPP);
     }

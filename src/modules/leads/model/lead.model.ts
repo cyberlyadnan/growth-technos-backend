@@ -42,6 +42,12 @@ export interface ILead extends Document {
   businessType?: string;
   serviceInterested?: string;
   monthlyBudget?: string;
+  /** Free Process Audit form: project budget range, timeline and the tools they use today. */
+  projectBudget?: string;
+  projectTimeline?: string;
+  currentTools: string[];
+  /** Timestamp sent by the browser at submit time (ISO). */
+  clientSubmittedAt?: Date | null;
   city?: string;
   message?: string;
   consent: boolean;
@@ -68,6 +74,8 @@ export interface ILead extends Document {
   scoreBreakdown?: IScoreBreakdown | null;
   eventsTriggered: LeadEventType[];
   notes?: string;
+  /** Why the lead was lost (set with status "lost"). */
+  lostReason?: string;
   /** Set when lead is converted into an AgencyClient (AMS). */
   convertedClientId?: Types.ObjectId | null;
   activityLog: ILeadActivityEntry[];
@@ -106,6 +114,10 @@ const leadSchema = new Schema<ILead>(
     businessType: { type: String, trim: true, maxlength: 120 },
     serviceInterested: { type: String, trim: true, maxlength: 200 },
     monthlyBudget: { type: String, trim: true, maxlength: 80 },
+    projectBudget: { type: String, trim: true, maxlength: 80 },
+    projectTimeline: { type: String, trim: true, maxlength: 120 },
+    currentTools: [{ type: String, trim: true, maxlength: 80 }],
+    clientSubmittedAt: { type: Date, default: null },
     city: { type: String, trim: true, maxlength: 120 },
     message: { type: String, trim: true, maxlength: 5000 },
     consent: { type: Boolean, default: false },
@@ -157,6 +169,7 @@ const leadSchema = new Schema<ILead>(
       },
     ],
     notes: { type: String, trim: true, maxlength: 5000 },
+    lostReason: { type: String, trim: true, maxlength: 1000 },
     convertedClientId: {
       type: Schema.Types.ObjectId,
       ref: 'AgencyClient',

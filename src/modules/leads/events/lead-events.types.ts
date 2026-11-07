@@ -3,6 +3,8 @@ import { IUtmFields } from '@core/schemas/lead-gen.schema';
 
 export type LeadSubmittedPayload = {
   leadId: string;
+  /** false when the MongoDB save failed (notifications still go out). */
+  savedToDatabase?: boolean;
   formId?: string;
   formSlug?: string;
   name?: string;
@@ -13,6 +15,10 @@ export type LeadSubmittedPayload = {
   industry?: string;
   serviceInterested?: string;
   monthlyBudget?: string;
+  projectBudget?: string;
+  projectTimeline?: string;
+  currentTools?: string[];
+  clientSubmittedAt?: string;
   city?: string;
   message?: string;
   leadType: LeadType;
@@ -34,9 +40,7 @@ export type LeadEventHandlerResult = {
   detail?: string;
 };
 
-export type LeadEventHandler = (
-  payload: LeadSubmittedPayload,
-) => Promise<LeadEventHandlerResult>;
+export type LeadEventHandler = (payload: LeadSubmittedPayload) => Promise<LeadEventHandlerResult>;
 
 export type LeadEventDispatchResult = {
   triggered: LeadEventType[];

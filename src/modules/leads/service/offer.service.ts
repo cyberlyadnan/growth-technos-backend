@@ -3,14 +3,14 @@ import { CtaActionType, OfferType } from '@core/constants/leads';
 import { EntityStatus } from '@core/schemas/base.schema';
 import { ICtaAction, IDisplayRules } from '@core/schemas/lead-gen.schema';
 import { BadRequestError, NotFoundError } from '@core/errors';
-import { buildPaginationMeta, buildSearchFilter, parsePaginationQuery } from '@core/pagination/pagination';
+import {
+  buildPaginationMeta,
+  buildSearchFilter,
+  parsePaginationQuery,
+} from '@core/pagination/pagination';
 import { PaginationMeta } from '@core/types';
 import { IOffer, Offer } from '../model/offer.model';
-import {
-  DisplayContext,
-  matchesDisplayRules,
-  sortByPriorityDesc,
-} from '../utils/display-rules';
+import { DisplayContext, matchesDisplayRules, sortByPriorityDesc } from '../utils/display-rules';
 
 export type CreateOfferDto = {
   title: string;
@@ -106,10 +106,7 @@ function mapOffer(doc: IOffer): OfferResponse {
   };
 }
 
-function mergeDisplayRules(
-  existing: IDisplayRules,
-  patch?: Partial<IDisplayRules>,
-): IDisplayRules {
+function mergeDisplayRules(existing: IDisplayRules, patch?: Partial<IDisplayRules>): IDisplayRules {
   if (!patch) return existing;
   return {
     industries: patch.industries ?? existing.industries,
@@ -179,10 +176,7 @@ export class OfferService {
     return mapOffer(doc);
   }
 
-  async listPublishedForContext(
-    context: DisplayContext,
-    limit = 5,
-  ): Promise<OfferResponse[]> {
+  async listPublishedForContext(context: DisplayContext, limit = 5): Promise<OfferResponse[]> {
     const now = context.now ?? new Date();
     const docs = await Offer.find({
       status: EntityStatus.PUBLISHED,
@@ -268,19 +262,19 @@ export class OfferService {
         url: dto.ctaAction.url ?? doc.ctaAction?.url,
         formId:
           dto.ctaAction.formId !== undefined
-            ? toObjectId(dto.ctaAction.formId?.toString()) ?? null
+            ? (toObjectId(dto.ctaAction.formId?.toString()) ?? null)
             : doc.ctaAction?.formId,
         offerId:
           dto.ctaAction.offerId !== undefined
-            ? toObjectId(dto.ctaAction.offerId?.toString()) ?? null
+            ? (toObjectId(dto.ctaAction.offerId?.toString()) ?? null)
             : doc.ctaAction?.offerId,
         magnetId:
           dto.ctaAction.magnetId !== undefined
-            ? toObjectId(dto.ctaAction.magnetId?.toString()) ?? null
+            ? (toObjectId(dto.ctaAction.magnetId?.toString()) ?? null)
             : doc.ctaAction?.magnetId,
         popupId:
           dto.ctaAction.popupId !== undefined
-            ? toObjectId(dto.ctaAction.popupId?.toString()) ?? null
+            ? (toObjectId(dto.ctaAction.popupId?.toString()) ?? null)
             : doc.ctaAction?.popupId,
         phone: dto.ctaAction.phone ?? doc.ctaAction?.phone,
         whatsappNumber: dto.ctaAction.whatsappNumber ?? doc.ctaAction?.whatsappNumber,
