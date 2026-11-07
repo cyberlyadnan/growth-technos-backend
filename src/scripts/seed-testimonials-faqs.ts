@@ -45,7 +45,7 @@ const FAQS = [
   {
     question: 'What does Growth Technos do?',
     answer:
-      'Growth Technos is a full-service digital agency in Noida Sector 62. We provide web development, SEO, digital marketing, e-commerce development, SaaS development, UI/UX design, branding, and healthcare marketing for businesses in India and internationally.',
+      'Growth Technos is a software and web development company serving Noida, Delhi NCR & Saharanpur. We provide web development, SEO, digital marketing, e-commerce development, SaaS development, UI/UX design, branding, and healthcare marketing for businesses in India and internationally.',
     category: 'General',
     sortOrder: 0,
     featured: true,
@@ -53,7 +53,7 @@ const FAQS = [
   {
     question: 'Where is Growth Technos located?',
     answer:
-      'Growth Technos is based in Noida Sector 62, Uttar Pradesh, India, and serves clients across Delhi NCR, India, and 12+ countries through on-site and remote collaboration.',
+      'Growth Technos is registered in Saharanpur, Uttar Pradesh, and meets clients in Noida by appointment. We serve Noida, Delhi NCR, Saharanpur and clients in 5 countries, mostly through remote collaboration.',
     category: 'General',
     sortOrder: 1,
     featured: true,

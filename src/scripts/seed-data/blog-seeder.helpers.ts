@@ -15,7 +15,7 @@ import { Tag } from '@modules/tags/model/tag.model';
 import { TopicCluster } from '@modules/topic-clusters/model/topic-cluster.model';
 import type { ITableOfContentsItem } from '@core/schemas/blog-seo.schema';
 
-export const SITE_URL = (process.env.APP_URL ?? 'https://growthtechnos.com').replace(/\/$/, '');
+export const SITE_URL = (process.env.PUBLIC_SITE_URL ?? 'https://www.growthtechnos.com').replace(/\/$/, '');
 export const UPLOAD_PREFIX = process.env.BLOG_UPLOAD_URL_PREFIX ?? '/uploads/blogs';
 
 export function blogImagePath(filename: string): string {

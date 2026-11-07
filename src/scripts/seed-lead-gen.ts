@@ -33,7 +33,7 @@ async function upsertThankYouPages() {
       type: ThankYouPageType.CONSULTATION,
       headline: 'Consultation requested',
       body: 'Thanks for reaching out. A strategist will review your note and follow up with clear next steps.',
-      timelineText: 'Expect a reply within 30 minutes during business hours (Mon–Sat).',
+      timelineText: 'We reply within one business day (Mon–Fri 9am–5pm, Sat 10am–4pm).',
       nextSteps: [
         { title: 'We review your inquiry', description: 'Industry, goals, and current digital presence.', order: 0 },
         { title: 'We reply with next steps', description: 'A short call agenda or clarifying questions — no hard sell.', order: 1 },
@@ -136,7 +136,7 @@ async function upsertSuccessMessage() {
   const data = {
     name: 'Contact success',
     headline: 'Thank you — we received your inquiry',
-    body: "No spam. We'll only contact you regarding your inquiry. Usually responds within 30 minutes during business hours.",
+    body: "No spam. We'll only contact you about your inquiry. We reply within one business day.",
     secondaryCta: { type: CtaActionType.LINK, label: 'Explore industries', url: '/industries' },
     status: EntityStatus.PUBLISHED,
   };
@@ -169,7 +169,7 @@ async function upsertForm(thankYouIds: Record<string, string>, successMessageId:
     fields,
     microcopy: {
       trustLine: 'Trusted by growing healthcare, restaurant, and salon businesses.',
-      responseTimeLine: 'Usually responds within 30 minutes during business hours.',
+      responseTimeLine: 'We reply within one business day.',
       privacyNote: "No spam. We'll only contact you regarding your inquiry.",
       submitLabel: 'Request consultation',
       consentLabel: 'I agree to be contacted regarding my inquiry.',

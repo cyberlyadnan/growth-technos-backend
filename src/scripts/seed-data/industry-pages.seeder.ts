@@ -14,7 +14,7 @@ import {
 } from './industry-pages.index';
 import type { IndustryPageSeed, IndustryStubService } from './industry-pages.types';
 
-export const SITE_URL = (process.env.APP_URL ?? 'https://growthtechnos.com').replace(/\/$/, '');
+export const SITE_URL = (process.env.PUBLIC_SITE_URL ?? 'https://www.growthtechnos.com').replace(/\/$/, '');
 
 function calculateSeoScore(seed: IndustryPageSeed): number {
   let score = 0;

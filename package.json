@@ -22,7 +22,10 @@
     "seed:industries": "ts-node -r tsconfig-paths/register src/scripts/seed-industries.ts",
     "seed:lead-gen": "ts-node -r tsconfig-paths/register src/scripts/seed-lead-gen.ts",
     "seed:testimonials-faqs": "ts-node -r tsconfig-paths/register src/scripts/seed-testimonials-faqs.ts",
-    "migrate:hide-service-pricing": "ts-node -r tsconfig-paths/register src/scripts/hide-service-pricing.ts"
+    "migrate:hide-service-pricing": "ts-node -r tsconfig-paths/register src/scripts/hide-service-pricing.ts",
+    "sync:case-studies": "ts-node -r tsconfig-paths/register src/scripts/sync-case-studies.ts",
+    "fix:canonicals": "ts-node -r tsconfig-paths/register src/scripts/fix-canonicals.ts",
+    "fix:claims": "ts-node -r tsconfig-paths/register src/scripts/fix-public-claims.ts"
   },
   "keywords": [
     "growth-technos",
