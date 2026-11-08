@@ -10,33 +10,43 @@ import { Testimonial } from '@modules/testimonials/model/testimonial.model';
 
 const TESTIMONIALS = [
   {
-    name: 'Tarun Kumar',
-    role: 'Google Review',
-    company: 'Verified client',
+    name: 'MOHD UMAR',
+    role: 'Google Verified Review',
+    company: 'Verified client · 3 months ago',
     content:
-      "An excellent choice for website design! I'm very happy with the services, and the team is extremely helpful. I highly recommend them to others.",
+      'He worked on my website since its core inception like from scratch to finish. My business client from United Kingdom appreciated the structure of my website so I would like to say that Mr. Adnan founder of Growth Technos is excellent in IT as well personally. My reviews are 10/10. Good luck Adnan to you and your team.',
     rating: 5,
     sortOrder: 0,
     featured: true,
   },
   {
-    name: 'Shruti Rai',
-    role: 'Google Review',
-    company: 'Verified client',
+    name: 'Riyaz Talib',
+    role: 'Google Verified Review',
+    company: 'Verified client · 8 months ago',
     content:
-      'One of the best choices for website designing. I am very happy with the services and the team is also very helpful. I would love to recommend to others.',
+      'I had a good experience working with Growth Technos for website and app development. The team was cooperative, responsive, and understood my requirements well. Communication was clear throughout the process and they provided proper support.',
     rating: 5,
     sortOrder: 1,
     featured: true,
   },
   {
-    name: 'Aman Malik',
-    role: 'Google Review',
-    company: 'Verified client',
+    name: 'Mohd Sadan',
+    role: 'Google Verified Review',
+    company: 'Verified client · 8 months ago',
     content:
-      'Good service and great work — very helpful to save time. Professional team and smooth delivery.',
+      'Had a great experience with Growth Technos! The team is friendly, professional, and really understands what your business needs. They delivered our website on time and the results from digital marketing have been impressive. Highly recommended!',
     rating: 5,
     sortOrder: 2,
+    featured: true,
+  },
+  {
+    name: 'Bilal Ahmed',
+    role: 'Google Verified Review',
+    company: 'Verified client · 7 months ago',
+    content:
+      'Growth Technos is a top IT company offering excellent web development and digital marketing services. Their team is professional, fast, and delivers high-quality results. Highly recommended!',
+    rating: 5,
+    sortOrder: 3,
     featured: true,
   },
 ];
