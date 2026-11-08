@@ -50,6 +50,18 @@ export const BLOG_INDUSTRIES = [
     icon: 'scissors',
   },
   {
+    slug: 'travel',
+    name: 'Travel & Tourism',
+    description: 'Tour operators, travel agencies, and destination planners.',
+    icon: 'plane',
+  },
+  {
+    slug: 'manufacturing',
+    name: 'Manufacturing & Distribution',
+    description: 'Distributors, traders, printers and small manufacturers.',
+    icon: 'factory',
+  },
+  {
     slug: 'general',
     name: 'General',
     description: 'Cross-industry insights for small and mid-sized businesses.',
@@ -100,4 +112,7 @@ export const BLOG_TAGS = [
   { slug: 'crm', name: 'CRM', color: '#0891b2' },
   { slug: 'chatbots', name: 'Chatbots', color: '#7c3aed' },
   { slug: 'business-growth', name: 'Business Growth', color: '#059669' },
+  { slug: 'inventory', name: 'Inventory Management', color: '#10b981' },
+  { slug: 'erp', name: 'ERP Software', color: '#6366f1' },
+  { slug: 'travel', name: 'Travel CRM', color: '#f59e0b' },
 ];
