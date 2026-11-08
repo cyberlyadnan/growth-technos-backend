@@ -103,3 +103,4 @@ const opportunitySchema = new Schema<IOpportunity>(
 applySoftDeleteQuery(opportunitySchema);
 
 export const Opportunity = model<IOpportunity>('AgencyOpportunity', opportunitySchema);
+
