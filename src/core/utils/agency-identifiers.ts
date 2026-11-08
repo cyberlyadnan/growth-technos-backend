@@ -6,6 +6,7 @@
 export type AgencyDocumentKind =
   | 'client'
   | 'project'
+  | 'opportunity'
   | 'quotation'
   | 'invoice'
   | 'receipt'
@@ -17,7 +18,7 @@ export type AgencyDocumentKind =
   | 'maintenance'
   | 'support'
   | 'document'
-  | 'handover'
+  | 'handover';
 
 export type AgencyNumberingRule = {
   kind: AgencyDocumentKind;
@@ -44,6 +45,13 @@ export const AGENCY_NUMBERING_RULES: Record<AgencyDocumentKind, AgencyNumberingR
     includeYear: true,
     sequenceWidth: 4,
     example: 'GT-PRJ-2026-0001',
+  },
+  opportunity: {
+    kind: 'opportunity',
+    prefix: 'GT-OP',
+    includeYear: true,
+    sequenceWidth: 4,
+    example: 'GT-OP-2026-0001',
   },
   quotation: {
     kind: 'quotation',

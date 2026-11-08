@@ -13,6 +13,9 @@ import maintenanceRoutes from '../maintenance/routes/maintenance.routes';
 import documentRoutes from '../documents/routes/document.routes';
 import activityRoutes from '../activity/routes/activity.routes';
 import handoverRoutes from '../handover/routes/handover.routes';
+import discoveryRoutes from '../discovery/routes/discovery.routes';
+import opportunityRoutes from '../opportunities/routes/opportunity.routes';
+import salesRoutes from '../sales/routes/sales-workflow.routes';
 
 const router = Router();
 
@@ -30,5 +33,8 @@ router.use('/maintenance', maintenanceRoutes);
 router.use('/documents', documentRoutes);
 router.use('/activity', activityRoutes);
 router.use('/handovers', handoverRoutes);
+router.use('/discovery', discoveryRoutes);
+router.use('/opportunities', opportunityRoutes);
+router.use('/sales', salesRoutes);
 
 export default router;

@@ -121,6 +121,15 @@ export type AgencyClientResponse = {
   industry?: string;
   estimatedHeadcount?: number;
   estimatedBudgetInr?: number;
+  lastContactDate?: string | null;
+  lastContactChannel?: string | null;
+  qualificationScore?: { overallScore: number; grade: string };
+  discoveryCallNotes?: {
+    questionsAndAnswers: Array<{ question: string; answer?: string }>;
+    callDate?: string | null;
+    notes?: string;
+    nextSteps?: string;
+  };
   detectedSignals: string[];
   recommendedOffer?: IRecommendedOffer;
   outreachDrafts?: IOutreachDrafts;
@@ -209,6 +218,19 @@ export class ClientService {
       industry: client.industry,
       estimatedHeadcount: client.estimatedHeadcount,
       estimatedBudgetInr: client.estimatedBudgetInr,
+      lastContactDate: client.lastContactDate ? new Date(client.lastContactDate).toISOString() : null,
+      lastContactChannel: client.lastContactChannel ?? null,
+      qualificationScore: client.qualificationScore,
+      discoveryCallNotes: client.discoveryCallNotes
+        ? {
+            questionsAndAnswers: client.discoveryCallNotes.questionsAndAnswers ?? [],
+            callDate: client.discoveryCallNotes.callDate
+              ? new Date(client.discoveryCallNotes.callDate).toISOString()
+              : null,
+            notes: client.discoveryCallNotes.notes,
+            nextSteps: client.discoveryCallNotes.nextSteps,
+          }
+        : undefined,
       detectedSignals: client.detectedSignals ?? [],
       recommendedOffer: client.recommendedOffer,
       outreachDrafts: client.outreachDrafts,

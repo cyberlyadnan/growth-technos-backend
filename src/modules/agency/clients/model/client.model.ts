@@ -11,12 +11,21 @@ export type AgencyClientType = 'individual' | 'company';
 export type AgencyClientStatus =
   | 'draft'
   | 'lead'
+  | 'outreach_prepared'
   | 'contacted'
+  | 'responded'
+  | 'interested'
+  | 'meeting_scheduled'
+  | 'qualified'
   | 'follow_up'
   | 'discovery_call'
   | 'proposal'
   | 'negotiation'
+  | 'won'
   | 'active'
+  | 'lost'
+  | 'not_interested'
+  | 'disqualified'
   | 'inactive'
   | 'archived';
 
@@ -36,6 +45,7 @@ export interface IOutreachDrafts {
   linkedinNote?: string;
   linkedinFollowup?: string;
   whatsappScript?: string;
+  whatsappFollowup?: string;
   callScript?: string;
   discoveryQuestions?: string[];
 }
@@ -109,6 +119,15 @@ export interface IAgencyClient extends Document {
   industry?: string;
   estimatedHeadcount?: number;
   estimatedBudgetInr?: number;
+  lastContactDate?: Date | null;
+  lastContactChannel?: string;
+  qualificationScore?: { overallScore: number; grade: string };
+  discoveryCallNotes?: {
+    questionsAndAnswers: Array<{ question: string; answer?: string }>;
+    callDate?: Date;
+    notes?: string;
+    nextSteps?: string;
+  };
   detectedSignals: string[];
   recommendedOffer?: IRecommendedOffer;
   outreachDrafts?: IOutreachDrafts;
@@ -215,12 +234,21 @@ const agencyClientSchema = new Schema<IAgencyClient>(
       enum: [
         'draft',
         'lead',
+        'outreach_prepared',
         'contacted',
+        'responded',
+        'interested',
+        'meeting_scheduled',
+        'qualified',
         'follow_up',
         'discovery_call',
         'proposal',
         'negotiation',
+        'won',
         'active',
+        'lost',
+        'not_interested',
+        'disqualified',
         'inactive',
         'archived',
       ],
@@ -233,6 +261,18 @@ const agencyClientSchema = new Schema<IAgencyClient>(
     industry: { type: String, trim: true, maxlength: 120, index: true },
     estimatedHeadcount: { type: Number, min: 0 },
     estimatedBudgetInr: { type: Number, min: 0 },
+    lastContactDate: { type: Date, default: null },
+    lastContactChannel: { type: String, trim: true },
+    qualificationScore: {
+      overallScore: { type: Number, min: 0, max: 100 },
+      grade: { type: String, trim: true },
+    },
+    discoveryCallNotes: {
+      questionsAndAnswers: [{ question: { type: String }, answer: { type: String } }],
+      callDate: { type: Date },
+      notes: { type: String },
+      nextSteps: { type: String },
+    },
     detectedSignals: [{ type: String, trim: true, maxlength: 200 }],
     recommendedOffer: {
       primaryService: { type: String, trim: true },
