@@ -8,7 +8,43 @@ import type { CurrencyCode } from '@core/utils/money';
 import { DEFAULT_AGENCY_CURRENCY } from '@core/utils/money';
 
 export type AgencyClientType = 'individual' | 'company';
-export type AgencyClientStatus = 'draft' | 'active' | 'inactive' | 'archived';
+export type AgencyClientStatus =
+  | 'draft'
+  | 'lead'
+  | 'contacted'
+  | 'follow_up'
+  | 'discovery_call'
+  | 'proposal'
+  | 'negotiation'
+  | 'active'
+  | 'inactive'
+  | 'archived';
+
+export interface IRecommendedOffer {
+  primaryService?: string;
+  estimatedBudgetInr?: number;
+  estimatedTimelineWeeks?: number;
+  keyPainPoint?: string;
+  whyThisPitch?: string;
+}
+
+export interface IOutreachDrafts {
+  coldEmail?: {
+    subject?: string;
+    body?: string;
+  };
+  linkedinNote?: string;
+  linkedinFollowup?: string;
+  whatsappScript?: string;
+  callScript?: string;
+  discoveryQuestions?: string[];
+}
+
+export interface IPreCallBattlecard {
+  killerDiscoveryQuestion?: string;
+  quickAudit?: string;
+  suggestedAngles?: string[];
+}
 
 export interface IClientContactPerson {
   name: string;
@@ -68,6 +104,18 @@ export interface IAgencyClient extends Document {
   status: AgencyClientStatus;
   /** Soft-list compatibility — true when status === 'active' */
   isActive: boolean;
+  website?: string;
+  domain?: string;
+  industry?: string;
+  estimatedHeadcount?: number;
+  estimatedBudgetInr?: number;
+  detectedSignals: string[];
+  recommendedOffer?: IRecommendedOffer;
+  outreachDrafts?: IOutreachDrafts;
+  preCallBattlecard?: IPreCallBattlecard;
+  nextFollowUpDate?: Date | null;
+  followUpNotes?: string;
+  assignedToName?: string;
   source?: string;
   sourceLeadId?: Types.ObjectId | null;
   assignedAccountManagerId?: Types.ObjectId | null;
@@ -164,11 +212,54 @@ const agencyClientSchema = new Schema<IAgencyClient>(
     taxId: { type: String, trim: true, uppercase: true, maxlength: 40, index: true },
     status: {
       type: String,
-      enum: ['draft', 'active', 'inactive', 'archived'],
+      enum: [
+        'draft',
+        'lead',
+        'contacted',
+        'follow_up',
+        'discovery_call',
+        'proposal',
+        'negotiation',
+        'active',
+        'inactive',
+        'archived',
+      ],
       default: 'active',
       index: true,
     },
     isActive: { type: Boolean, default: true, index: true },
+    website: { type: String, trim: true, maxlength: 500 },
+    domain: { type: String, trim: true, lowercase: true, maxlength: 200, index: true },
+    industry: { type: String, trim: true, maxlength: 120, index: true },
+    estimatedHeadcount: { type: Number, min: 0 },
+    estimatedBudgetInr: { type: Number, min: 0 },
+    detectedSignals: [{ type: String, trim: true, maxlength: 200 }],
+    recommendedOffer: {
+      primaryService: { type: String, trim: true },
+      estimatedBudgetInr: { type: Number, min: 0 },
+      estimatedTimelineWeeks: { type: Number, min: 0 },
+      keyPainPoint: { type: String, trim: true },
+      whyThisPitch: { type: String, trim: true },
+    },
+    outreachDrafts: {
+      coldEmail: {
+        subject: { type: String, trim: true },
+        body: { type: String, trim: true },
+      },
+      linkedinNote: { type: String, trim: true },
+      linkedinFollowup: { type: String, trim: true },
+      whatsappScript: { type: String, trim: true },
+      callScript: { type: String, trim: true },
+      discoveryQuestions: [{ type: String, trim: true }],
+    },
+    preCallBattlecard: {
+      killerDiscoveryQuestion: { type: String, trim: true },
+      quickAudit: { type: String, trim: true },
+      suggestedAngles: [{ type: String, trim: true }],
+    },
+    nextFollowUpDate: { type: Date, default: null, index: true },
+    followUpNotes: { type: String, trim: true, maxlength: 3000 },
+    assignedToName: { type: String, trim: true, maxlength: 120 },
     source: { type: String, trim: true, maxlength: 80, index: true },
     sourceLeadId: { type: Schema.Types.ObjectId, ref: 'Lead', default: null, index: true },
     assignedAccountManagerId: {

@@ -3,6 +3,19 @@ import { mongoIdParamSchema, mongoIdSchema, paginationQuerySchema } from '@core/
 
 const currencySchema = z.enum(['INR', 'USD', 'EUR', 'GBP', 'AED']);
 
+export const clientStatusSchema = z.enum([
+  'draft',
+  'lead',
+  'contacted',
+  'follow_up',
+  'discovery_call',
+  'proposal',
+  'negotiation',
+  'active',
+  'inactive',
+  'archived',
+]);
+
 const addressSchema = z
   .object({
     line1: z.string().max(200).trim().optional(),
@@ -38,6 +51,40 @@ const attachmentSchema = z.object({
   sizeBytes: z.coerce.number().int().min(0).optional(),
 });
 
+const recommendedOfferSchema = z
+  .object({
+    primaryService: z.string().max(200).trim().optional(),
+    estimatedBudgetInr: z.coerce.number().min(0).optional(),
+    estimatedTimelineWeeks: z.coerce.number().min(0).optional(),
+    keyPainPoint: z.string().max(1000).trim().optional(),
+    whyThisPitch: z.string().max(2000).trim().optional(),
+  })
+  .optional();
+
+const outreachDraftsSchema = z
+  .object({
+    coldEmail: z
+      .object({
+        subject: z.string().max(300).trim().optional(),
+        body: z.string().max(5000).trim().optional(),
+      })
+      .optional(),
+    linkedinNote: z.string().max(1000).trim().optional(),
+    linkedinFollowup: z.string().max(2000).trim().optional(),
+    whatsappScript: z.string().max(2000).trim().optional(),
+    callScript: z.string().max(5000).trim().optional(),
+    discoveryQuestions: z.array(z.string().max(500).trim()).max(20).optional(),
+  })
+  .optional();
+
+const preCallBattlecardSchema = z
+  .object({
+    killerDiscoveryQuestion: z.string().max(500).trim().optional(),
+    quickAudit: z.string().max(3000).trim().optional(),
+    suggestedAngles: z.array(z.string().max(500).trim()).max(10).optional(),
+  })
+  .optional();
+
 const clientBodyObjectSchema = z.object({
   clientType: z.enum(['individual', 'company']).default('company'),
   name: z.string().min(1).max(200).trim(),
@@ -49,7 +96,19 @@ const clientBodyObjectSchema = z.object({
   contactPersons: z.array(contactPersonSchema).max(20).optional(),
   billingAddress: addressSchema,
   taxId: z.string().max(40).trim().optional(),
-  status: z.enum(['draft', 'active', 'inactive', 'archived']).optional(),
+  status: clientStatusSchema.optional(),
+  website: z.string().max(500).trim().optional().or(z.literal('')),
+  domain: z.string().max(200).trim().optional().or(z.literal('')),
+  industry: z.string().max(120).trim().optional().or(z.literal('')),
+  estimatedHeadcount: z.coerce.number().int().min(0).optional().nullable(),
+  estimatedBudgetInr: z.coerce.number().min(0).optional().nullable(),
+  detectedSignals: z.array(z.string().max(200).trim()).max(50).optional(),
+  recommendedOffer: recommendedOfferSchema,
+  outreachDrafts: outreachDraftsSchema,
+  preCallBattlecard: preCallBattlecardSchema,
+  nextFollowUpDate: z.coerce.date().optional().nullable(),
+  followUpNotes: z.string().max(3000).trim().optional().or(z.literal('')),
+  assignedToName: z.string().max(120).trim().optional().or(z.literal('')),
   source: z.string().max(80).trim().optional(),
   assignedAccountManagerId: mongoIdSchema.optional().nullable(),
   tags: z.array(z.string().max(60).trim()).max(30).optional(),
@@ -67,7 +126,7 @@ export const updateClientSchema = clientBodyObjectSchema.partial();
 
 export const listClientsSchema = paginationQuerySchema.extend({
   search: z.string().max(120).trim().optional(),
-  status: z.enum(['draft', 'active', 'inactive', 'archived']).optional(),
+  status: clientStatusSchema.optional(),
   clientType: z.enum(['individual', 'company']).optional(),
   source: z.string().max(80).trim().optional(),
   assignedAccountManagerId: mongoIdSchema.optional(),

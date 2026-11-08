@@ -18,6 +18,9 @@ import {
   IClientBillingPreferences,
   IClientContactPerson,
   IClientAddress,
+  IRecommendedOffer,
+  IOutreachDrafts,
+  IPreCallBattlecard,
 } from '../model/client.model';
 import { allocateAgencyDocumentCode } from './number-sequence.service';
 import { activityService } from '@modules/agency/activity/service/activity.service';
@@ -44,6 +47,18 @@ export type CreateClientDto = {
   billingAddress?: IClientAddress;
   taxId?: string;
   status?: AgencyClientStatus;
+  website?: string;
+  domain?: string;
+  industry?: string;
+  estimatedHeadcount?: number | null;
+  estimatedBudgetInr?: number | null;
+  detectedSignals?: string[];
+  recommendedOffer?: IRecommendedOffer;
+  outreachDrafts?: IOutreachDrafts;
+  preCallBattlecard?: IPreCallBattlecard;
+  nextFollowUpDate?: Date | null;
+  followUpNotes?: string;
+  assignedToName?: string;
   source?: string;
   assignedAccountManagerId?: string | null;
   tags?: string[];
@@ -101,6 +116,18 @@ export type AgencyClientResponse = {
   taxId?: string;
   status: AgencyClientStatus;
   isActive: boolean;
+  website?: string;
+  domain?: string;
+  industry?: string;
+  estimatedHeadcount?: number;
+  estimatedBudgetInr?: number;
+  detectedSignals: string[];
+  recommendedOffer?: IRecommendedOffer;
+  outreachDrafts?: IOutreachDrafts;
+  preCallBattlecard?: IPreCallBattlecard;
+  nextFollowUpDate?: string | null;
+  followUpNotes?: string;
+  assignedToName?: string;
   source?: string;
   sourceLeadId?: string | null;
   assignedAccountManagerId?: string | null;
@@ -177,6 +204,22 @@ export class ClientService {
       taxId: client.taxId,
       status: client.status,
       isActive: client.isActive,
+      website: client.website,
+      domain: client.domain,
+      industry: client.industry,
+      estimatedHeadcount: client.estimatedHeadcount,
+      estimatedBudgetInr: client.estimatedBudgetInr,
+      detectedSignals: client.detectedSignals ?? [],
+      recommendedOffer: client.recommendedOffer,
+      outreachDrafts: client.outreachDrafts,
+      preCallBattlecard: client.preCallBattlecard,
+      nextFollowUpDate: client.nextFollowUpDate
+        ? client.nextFollowUpDate instanceof Date
+          ? client.nextFollowUpDate.toISOString()
+          : new Date(client.nextFollowUpDate).toISOString()
+        : null,
+      followUpNotes: client.followUpNotes,
+      assignedToName: client.assignedToName,
       source: client.source,
       sourceLeadId: client.sourceLeadId ? String(client.sourceLeadId) : null,
       assignedAccountManagerId: client.assignedAccountManagerId
@@ -377,7 +420,17 @@ export class ClientService {
     });
 
     let filter: ClientFilter = {
-      ...buildSearchFilter(query.search, ['name', 'legalName', 'email', 'code', 'phone', 'notes']),
+      ...buildSearchFilter(query.search, [
+        'name',
+        'legalName',
+        'email',
+        'code',
+        'phone',
+        'notes',
+        'domain',
+        'industry',
+        'assignedToName',
+      ]),
     };
 
     if (query.trashOnly) filter.isDeleted = true;
@@ -472,6 +525,26 @@ export class ClientService {
       taxId: normalized.taxId,
       status,
       isActive: statusToIsActive(status),
+      website: dto.website?.trim() || undefined,
+      domain:
+        dto.domain?.trim().toLowerCase() ||
+        (dto.website
+          ? dto.website
+              .replace(/^https?:\/\//i, '')
+              .replace(/^www\./i, '')
+              .split('/')[0]
+              .toLowerCase()
+          : undefined),
+      industry: dto.industry?.trim() || undefined,
+      estimatedHeadcount: dto.estimatedHeadcount ?? undefined,
+      estimatedBudgetInr: dto.estimatedBudgetInr ?? undefined,
+      detectedSignals: dto.detectedSignals ?? [],
+      recommendedOffer: dto.recommendedOffer,
+      outreachDrafts: dto.outreachDrafts,
+      preCallBattlecard: dto.preCallBattlecard,
+      nextFollowUpDate: dto.nextFollowUpDate ?? null,
+      followUpNotes: dto.followUpNotes?.trim() || undefined,
+      assignedToName: dto.assignedToName?.trim() || undefined,
       source: normalized.source ?? (dto.sourceLeadId ? 'lead_conversion' : 'manual'),
       sourceLeadId: dto.sourceLeadId || null,
       assignedAccountManagerId: dto.assignedAccountManagerId || null,
@@ -552,6 +625,18 @@ export class ClientService {
       updateData.status = nextStatus;
       updateData.isActive = statusToIsActive(nextStatus);
     }
+    if (dto.website !== undefined) updateData.website = dto.website?.trim() || undefined;
+    if (dto.domain !== undefined) updateData.domain = dto.domain?.trim().toLowerCase() || undefined;
+    if (dto.industry !== undefined) updateData.industry = dto.industry?.trim() || undefined;
+    if (dto.estimatedHeadcount !== undefined) updateData.estimatedHeadcount = dto.estimatedHeadcount;
+    if (dto.estimatedBudgetInr !== undefined) updateData.estimatedBudgetInr = dto.estimatedBudgetInr;
+    if (dto.detectedSignals !== undefined) updateData.detectedSignals = dto.detectedSignals;
+    if (dto.recommendedOffer !== undefined) updateData.recommendedOffer = dto.recommendedOffer;
+    if (dto.outreachDrafts !== undefined) updateData.outreachDrafts = dto.outreachDrafts;
+    if (dto.preCallBattlecard !== undefined) updateData.preCallBattlecard = dto.preCallBattlecard;
+    if (dto.nextFollowUpDate !== undefined) updateData.nextFollowUpDate = dto.nextFollowUpDate;
+    if (dto.followUpNotes !== undefined) updateData.followUpNotes = dto.followUpNotes?.trim() || undefined;
+    if (dto.assignedToName !== undefined) updateData.assignedToName = dto.assignedToName?.trim() || undefined;
     if (dto.source !== undefined) updateData.source = normalized.source;
     if (dto.assignedAccountManagerId !== undefined) {
       updateData.assignedAccountManagerId = dto.assignedAccountManagerId || null;

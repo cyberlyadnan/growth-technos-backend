@@ -6,7 +6,17 @@
 import type { Types } from 'mongoose';
 import type { IMoneyAmount, AgencyEntityStatus } from '../schemas/agency-base.schema';
 
-export type AgencyClientStatus = AgencyEntityStatus;
+export type AgencyClientStatus =
+  | 'draft'
+  | 'lead'
+  | 'contacted'
+  | 'follow_up'
+  | 'discovery_call'
+  | 'proposal'
+  | 'negotiation'
+  | 'active'
+  | 'inactive'
+  | 'archived';
 
 export interface AgencyClientDraft {
   code?: string;
