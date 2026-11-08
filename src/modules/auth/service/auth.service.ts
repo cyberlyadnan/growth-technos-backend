@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { resolveRolePermissions, UserRole, UserStatus } from '@core/constants';
 import {
   AuthenticationError,
@@ -358,7 +358,7 @@ export class AuthService {
       { refreshExpiresIn },
     );
 
-    const family = uuidv4();
+    const family = randomUUID();
     await this.persistRefreshToken(user.id, tokens.refreshToken, family, session);
 
     return {

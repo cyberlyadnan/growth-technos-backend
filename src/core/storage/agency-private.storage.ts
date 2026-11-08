@@ -6,7 +6,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { createReadStream } from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { env } from '@core/config';
 import { BadRequestError, NotFoundError } from '@core/errors';
 
@@ -80,7 +80,7 @@ export class AgencyPrivateStorage {
     this.assertAllowed(mimeType, buffer.length);
     await this.ensureRoot();
     const ext = EXT_BY_MIME[mimeType] || path.extname(originalName).toLowerCase() || '.bin';
-    const storageKey = `${uuidv4()}${ext}`;
+    const storageKey = `${randomUUID()}${ext}`;
     await fs.writeFile(this.absolutePath(storageKey), buffer);
     return {
       storageKey,

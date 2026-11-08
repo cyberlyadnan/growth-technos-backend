@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { env } from '@core/config';
 import {
   ALLOWED_IMAGE_MIME_TYPES,
@@ -40,7 +40,7 @@ export class LocalStorageService implements StorageService {
     await this.ensureUploadDir();
 
     const extension = resolveExtension(options.originalName, options.mimeType);
-    const filename = `${uuidv4()}${extension}`;
+    const filename = `${randomUUID()}${extension}`;
     const absolutePath = path.join(this.uploadRoot, filename);
     const relativePath = path.posix.join(env.BLOG_UPLOAD_DIR.replace(/\\/g, '/'), filename);
 
