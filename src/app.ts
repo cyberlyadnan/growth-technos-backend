@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import fs from 'fs';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -35,9 +36,17 @@ export function createApp(): Application {
   app.use(sanitizeMiddleware);
   app.use(hppMiddleware);
 
+  const uploadsDir =
+    [
+      path.join(process.cwd(), 'uploads'),
+      path.join(process.cwd(), 'growth-technos-backend', 'uploads'),
+      path.resolve(__dirname, '../uploads'),
+      path.resolve(__dirname, '../../uploads'),
+    ].find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'uploads');
+
   app.use(
     '/uploads',
-    express.static(path.join(process.cwd(), 'uploads'), {
+    express.static(uploadsDir, {
       maxAge: env.NODE_ENV === 'production' ? '7d' : 0,
       etag: true,
       lastModified: true,

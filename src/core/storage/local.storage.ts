@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { env } from '@core/config';
@@ -22,7 +23,16 @@ export class LocalStorageService implements StorageService {
   private readonly uploadRoot: string;
 
   constructor() {
-    this.uploadRoot = path.resolve(process.cwd(), env.BLOG_UPLOAD_DIR);
+    const baseDir = [
+      path.join(process.cwd(), 'uploads'),
+      path.join(process.cwd(), 'growth-technos-backend', 'uploads'),
+    ].some((dir) => fsSync.existsSync(dir))
+      ? fsSync.existsSync(path.join(process.cwd(), 'growth-technos-backend', 'uploads'))
+        ? path.join(process.cwd(), 'growth-technos-backend')
+        : process.cwd()
+      : process.cwd();
+
+    this.uploadRoot = path.resolve(baseDir, env.BLOG_UPLOAD_DIR);
   }
 
   private async ensureUploadDir(): Promise<void> {
