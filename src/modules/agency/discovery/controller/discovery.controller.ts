@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { discoveryService } from '../service/discovery.service';
-import { sendSuccess, sendCreated } from '@core/response';
+import { sendSuccess } from '@core/response';
 
 export class DiscoveryController {
   async startJob(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -25,7 +25,7 @@ export class DiscoveryController {
 
   async getJobStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { jobId } = req.params;
+      const jobId = String(req.params.jobId);
       const job = await discoveryService.getJobStatus(jobId);
       sendSuccess(res, job, 'Job status retrieved');
     } catch (error) {
@@ -35,7 +35,7 @@ export class DiscoveryController {
 
   async cancelJob(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { jobId } = req.params;
+      const jobId = String(req.params.jobId);
       const job = await discoveryService.cancelJob(jobId);
       sendSuccess(res, job, 'Discovery job cancelled');
     } catch (error) {
@@ -63,7 +63,7 @@ export class DiscoveryController {
 
   async getProspect(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const prospect = await discoveryService.getStagedProspect(id);
       sendSuccess(res, prospect, 'Prospect dossier retrieved');
     } catch (error) {
@@ -73,7 +73,7 @@ export class DiscoveryController {
 
   async approveProspect(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const user = (req as any).user;
       const result = await discoveryService.approveProspect(
         id,
@@ -89,7 +89,7 @@ export class DiscoveryController {
 
   async rejectProspect(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const user = (req as any).user;
       const result = await discoveryService.rejectProspect(
         id,

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { salesWorkflowService } from '../service/sales-workflow.service';
-import { sendSuccess, sendCreated } from '@core/response';
+import { sendSuccess } from '@core/response';
 
 export class SalesWorkflowController {
   async recordOutreach(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -45,7 +45,7 @@ export class SalesWorkflowController {
     }
   }
 
-  async listFollowUps(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async listFollowUps(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await salesWorkflowService.listFollowUps();
       sendSuccess(res, result, 'Follow-up reminders retrieved');
@@ -56,7 +56,7 @@ export class SalesWorkflowController {
 
   async completeFollowUp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { clientId } = req.params;
+      const clientId = String(req.params.clientId);
       const user = (req as any).user;
       const { action, notes, rescheduleDate } = req.body;
       const client = await salesWorkflowService.completeFollowUp(

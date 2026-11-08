@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { opportunityService } from '../service/opportunity.service';
-import { sendSuccess, sendCreated } from '@core/response';
+import { sendSuccess } from '@core/response';
 
 export class OpportunityController {
   async createOpportunity(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -15,7 +15,7 @@ export class OpportunityController {
 
   async updateOpportunity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const user = (req as any).user;
       const opportunity = await opportunityService.updateOpportunity(id, req.body, user?.id || user?._id);
       sendSuccess(res, opportunity, 'Opportunity updated successfully');
@@ -26,7 +26,7 @@ export class OpportunityController {
 
   async getOpportunity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const opportunity = await opportunityService.getOpportunity(id);
       sendSuccess(res, opportunity, 'Opportunity retrieved');
     } catch (error) {
@@ -53,7 +53,7 @@ export class OpportunityController {
 
   async deleteOpportunity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const user = (req as any).user;
       await opportunityService.deleteOpportunity(id, user?.id || user?._id);
       sendSuccess(res, null, 'Opportunity deleted successfully');

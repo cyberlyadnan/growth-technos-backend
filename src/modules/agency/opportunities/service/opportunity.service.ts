@@ -7,7 +7,7 @@ import {
   OpportunityCategory,
   OpportunityStage,
 } from '../model/opportunity.model';
-import { AgencyClient, AgencyClientStatus } from '@modules/agency/clients/model/client.model';
+import { AgencyClient } from '@modules/agency/clients/model/client.model';
 import { allocateAgencyDocumentCode } from '@modules/agency/clients/service/number-sequence.service';
 
 export type CreateOpportunityDto = {

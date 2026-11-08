@@ -4,9 +4,9 @@ import fs from 'fs';
 import { Types } from 'mongoose';
 import { BadRequestError, NotFoundError, ConflictError } from '@core/errors';
 import { logger } from '@core/logger';
-import { DiscoveryJob, IDiscoveryJob, DiscoveryJobStatus } from '../model/discovery-job.model';
-import { StagedProspect, IStagedProspect, ProspectReviewStatus } from '../model/staged-prospect.model';
-import { AgencyClient, AgencyClientStatus } from '@modules/agency/clients/model/client.model';
+import { DiscoveryJob, IDiscoveryJob } from '../model/discovery-job.model';
+import { StagedProspect, IStagedProspect } from '../model/staged-prospect.model';
+import { AgencyClient } from '@modules/agency/clients/model/client.model';
 import { clientService } from '@modules/agency/clients/service/client.service';
 import { UserRole } from '@core/constants';
 
@@ -66,7 +66,7 @@ export class DiscoveryService {
     // Check if there is already an active job running in the last 10 minutes
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const existingRunning = await DiscoveryJob.findOne({
-      status: DiscoveryJobStatus.RUNNING,
+      status: 'running',
       startedAt: { $gte: tenMinutesAgo },
     });
 
@@ -82,7 +82,7 @@ export class DiscoveryService {
       jobId,
       createdBy: new Types.ObjectId(userId),
       createdByName: userName || 'Admin',
-      status: DiscoveryJobStatus.RUNNING,
+      status: 'running',
       config: {
         provider: config.provider,
         city: config.city,
@@ -152,7 +152,7 @@ export class DiscoveryService {
         await DiscoveryJob.findOneAndUpdate(
           { jobId },
           {
-            status: DiscoveryJobStatus.FAILED,
+            status: 'failed',
             error: 'Discovery process timed out after 5 minutes',
             completedAt: new Date(),
           },
@@ -198,7 +198,7 @@ export class DiscoveryService {
         await DiscoveryJob.findOneAndUpdate(
           { jobId },
           {
-            status: DiscoveryJobStatus.FAILED,
+            status: 'failed',
             error: stderrBuffer.slice(-500) || `Process exited with error code ${code}`,
             completedAt: new Date(),
           },
@@ -213,7 +213,7 @@ export class DiscoveryService {
         await DiscoveryJob.findOneAndUpdate(
           { jobId },
           {
-            status: DiscoveryJobStatus.FAILED,
+            status: 'failed',
             error: err.message || 'Failed to parse discovered prospects',
             completedAt: new Date(),
           },
@@ -277,7 +277,7 @@ export class DiscoveryService {
       if (!isDuplicate && domain) {
         const stagedMatch = await StagedProspect.findOne({
           domain,
-          reviewStatus: ProspectReviewStatus.APPROVED,
+          reviewStatus: 'approved',
         });
 
         if (stagedMatch) {
@@ -324,7 +324,7 @@ export class DiscoveryService {
           matchedClientName,
           matchReason,
         },
-        reviewStatus: ProspectReviewStatus.STAGED,
+        reviewStatus: 'staged',
       });
     }
 
@@ -333,7 +333,7 @@ export class DiscoveryService {
     await DiscoveryJob.findOneAndUpdate(
       { jobId },
       {
-        status: DiscoveryJobStatus.COMPLETED,
+        status: 'completed',
         progressPercent: 100,
         currentStepMessage: `Discovery completed. Found ${companiesFound} companies (${duplicatesDetected} duplicates flagged).`,
         stats: {
@@ -364,7 +364,7 @@ export class DiscoveryService {
       activeChildProcesses.delete(jobId);
     }
 
-    job.status = DiscoveryJobStatus.CANCELLED;
+    job.status = 'cancelled';
     job.currentStepMessage = 'Job cancelled by user.';
     job.completedAt = new Date();
     await job.save();
@@ -490,7 +490,7 @@ export class DiscoveryService {
       throw new NotFoundError('Staged prospect not found');
     }
 
-    if (prospect.reviewStatus === ProspectReviewStatus.APPROVED && prospect.promotedClientId) {
+    if (prospect.reviewStatus === 'approved' && prospect.promotedClientId) {
       throw new ConflictError('Prospect has already been approved into CRM');
     }
 
@@ -511,7 +511,7 @@ export class DiscoveryService {
     ].filter(Boolean).join('\n');
 
     // Create AgencyClient through canonical agency clientService
-    const createdClient = await clientService.createClient(
+    const createdClient = await clientService.create(
       {
         name: prospect.companyName,
         legalName: prospect.legalName || prospect.companyName,
@@ -525,25 +525,26 @@ export class DiscoveryService {
           state: prospect.state,
           country: prospect.country,
           postalCode: '',
-          streetAddress1: prospect.address || '',
+          line1: prospect.address || '',
         },
-        status: AgencyClientStatus.LEAD,
+        status: 'lead' as any,
         notes: leadNote,
         detectedSignals: (prospect.growthOpportunities || []).map((o) => o.title),
         recommendedOffer: {
           primaryService: prospect.growthOpportunities?.[0]?.title || 'Custom Business Software',
-          estimatedBudgetMin: prospect.growthOpportunities?.[0]?.estimatedValueInr || 45000,
-          estimatedBudgetMax: (prospect.growthOpportunities?.[0]?.estimatedValueInr || 45000) * 1.5,
-          valueProposition: prospect.growthOpportunities?.[0]?.recommendedPitch || 'Custom software engineered around your actual business operations.',
+          estimatedBudgetInr: prospect.growthOpportunities?.[0]?.estimatedValueInr || 45000,
+          whyThisPitch: prospect.growthOpportunities?.[0]?.recommendedPitch || 'Custom software engineered around your actual business operations.',
         },
         assignedAccountManagerId: overrides?.assignedAccountManagerId,
       },
-      userId,
-      userRole,
+      {
+        id: userId,
+        role: userRole || 'admin',
+      },
     );
 
     // Update staged prospect status
-    prospect.reviewStatus = ProspectReviewStatus.APPROVED;
+    prospect.reviewStatus = 'approved';
     prospect.reviewedBy = new Types.ObjectId(userId);
     prospect.reviewedAt = new Date();
     prospect.promotedClientId = new Types.ObjectId(createdClient.id);
@@ -571,7 +572,7 @@ export class DiscoveryService {
       throw new NotFoundError('Staged prospect not found');
     }
 
-    prospect.reviewStatus = ProspectReviewStatus.REJECTED;
+    prospect.reviewStatus = 'rejected';
     prospect.rejectionReason = reason || 'Not suitable';
     prospect.reviewedBy = new Types.ObjectId(userId);
     prospect.reviewedAt = new Date();

@@ -7,8 +7,7 @@ import {
   IAgencyClient,
 } from '@modules/agency/clients/model/client.model';
 import { Opportunity } from '@modules/agency/opportunities/model/opportunity.model';
-import { StagedProspect, ProspectReviewStatus } from '@modules/agency/discovery/model/staged-prospect.model';
-import { AgencyPayment } from '@modules/agency/billing/model/payment.model';
+import { StagedProspect } from '@modules/agency/discovery/model/staged-prospect.model';
 import { AgencyInvoice } from '@modules/agency/billing/model/invoice.model';
 
 export type OutreachActivityType =
@@ -382,7 +381,7 @@ export class SalesWorkflowService {
       StagedProspect.countDocuments({ reviewStatus: 'approved', createdAt: { $gte: startDate } }),
       AgencyClient.find({ isDeleted: false, createdAt: { $gte: startDate } }, 'status activityLog lastContactDate').lean(),
       Opportunity.find({ isDeleted: false, createdAt: { $gte: startDate } }, 'stage estimatedValueInr wonAt lostReason').lean(),
-      AgencyInvoice.find({ isDeleted: false, paymentStatus: 'paid' }, 'totalAmountMinor currency').lean(),
+      AgencyInvoice.find({ isDeleted: false, status: 'paid' }, 'grandTotalMinor currency').lean(),
     ]);
 
     // Calculate outreach activities & responses
@@ -433,8 +432,8 @@ export class SalesWorkflowService {
     const avgDealValueInr = dealsWonCount > 0 ? Math.round(wonDealsValueInr / dealsWonCount) : 0;
 
     // Actual revenue collected from settled invoices (in INR)
-    const actualCollectedRevenueInr = paidInvoices.reduce((acc, inv) => {
-      return acc + Math.round((inv.totalAmountMinor || 0) / 100);
+    const actualCollectedRevenueInr = paidInvoices.reduce((acc, inv: any) => {
+      return acc + Math.round((inv.grandTotalMinor || 0) / 100);
     }, 0);
 
     return {
