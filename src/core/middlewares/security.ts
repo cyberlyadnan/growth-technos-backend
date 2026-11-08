@@ -59,6 +59,15 @@ export const corsMiddleware = cors({
 
     const normalizedOrigin = origin.trim().replace(/\/+$/, '');
 
+    // Allow any localhost / 127.0.0.1 port in non-production
+    if (
+      env.NODE_ENV !== 'production' &&
+      /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(normalizedOrigin)
+    ) {
+      callback(null, true);
+      return;
+    }
+
     // 1. Direct match with configured origins (CLIENT_URL, CORS_ORIGINS, paired www/apex)
     if (allowedCorsOrigins.includes(normalizedOrigin)) {
       callback(null, true);

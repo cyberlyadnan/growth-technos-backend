@@ -56,6 +56,16 @@ export function createApp(): Application {
     app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
   }
 
+  app.get('/', (_req, res) => {
+    res.json({
+      success: true,
+      message: 'Growth Technos Backend API is running',
+      docs: '/api/docs',
+      health: '/health',
+      version: env.API_VERSION,
+    });
+  });
+
   app.get('/health', (_req, res) => {
     res.json({
       success: true,

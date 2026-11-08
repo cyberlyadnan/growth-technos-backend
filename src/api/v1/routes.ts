@@ -38,6 +38,16 @@ router.use('/media', mediaRoutes);
 router.use('/leads', leadRoutes);
 // router.use('/crm', crmRoutes);
 
+router.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'Growth Technos API v1 is active',
+    data: { version: 'v1', status: 'healthy', timestamp: new Date().toISOString() },
+    errors: [],
+    meta: null,
+  });
+});
+
 router.get('/health', (_req, res) => {
   res.json({
     success: true,
