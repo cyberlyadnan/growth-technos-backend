@@ -90,6 +90,11 @@ export const BLOG_TOPIC_CLUSTERS = [
     name: 'Business Automation',
     description: 'AI tools, CRM workflows, and operational efficiency.',
   },
+  {
+    slug: 'custom-software-engineering',
+    name: 'Custom Software & SaaS',
+    description: 'Scoping, architectures, development costs, and MVP strategies for growing businesses.',
+  },
 ];
 
 export const BLOG_TAGS = [
@@ -107,6 +112,7 @@ export const BLOG_TAGS = [
   { slug: 'beauty-salon', name: 'Beauty Salon', color: '#d946ef' },
   { slug: 'instagram-marketing', name: 'Instagram Marketing', color: '#e11d48' },
   { slug: 'whatsapp-marketing', name: 'WhatsApp Marketing', color: '#16a34a' },
+  { slug: 'whatsapp-automation', name: 'WhatsApp Automation', color: '#25d366' },
   { slug: 'ai', name: 'AI', color: '#6366f1' },
   { slug: 'automation', name: 'Automation', color: '#4f46e5' },
   { slug: 'crm', name: 'CRM', color: '#0891b2' },
@@ -115,4 +121,12 @@ export const BLOG_TAGS = [
   { slug: 'inventory', name: 'Inventory Management', color: '#10b981' },
   { slug: 'erp', name: 'ERP Software', color: '#6366f1' },
   { slug: 'travel', name: 'Travel CRM', color: '#f59e0b' },
+  { slug: 'custom-software', name: 'Custom Software', color: '#921a22' },
+  { slug: 'software-company', name: 'Software Company', color: '#0284c7' },
+  { slug: 'hiring-developers', name: 'Hiring Developers', color: '#f59e0b' },
+  { slug: 'web-development', name: 'Web Development', color: '#3b82f6' },
+  { slug: 'saas', name: 'SaaS', color: '#6366f1' },
+  { slug: 'mvp', name: 'MVP Development', color: '#8b5cf6' },
+  { slug: 'software-cost', name: 'Software Cost', color: '#059669' },
+  { slug: 'startup', name: 'Startup', color: '#ec4899' },
 ];

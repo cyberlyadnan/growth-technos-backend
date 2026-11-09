@@ -284,6 +284,7 @@ export class BlogService {
       robotsIndex: blog.robotsIndex,
       robotsFollow: blog.robotsFollow,
       seoScore: blog.seoScore,
+      faqSchema: blog.faqSchema,
       includeInSitemap: blog.includeInSitemap,
       includeInRss: blog.includeInRss,
       isDeleted: blog.isDeleted,

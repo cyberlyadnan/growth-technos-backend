@@ -99,6 +99,7 @@ export interface BlogResponse {
   robotsIndex: boolean;
   robotsFollow: boolean;
   seoScore?: number;
+  faqSchema?: Array<{ question: string; answer: string }>;
   includeInSitemap: boolean;
   includeInRss: boolean;
   isDeleted: boolean;

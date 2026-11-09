@@ -124,7 +124,8 @@ async function seedBlogs(): Promise<void> {
 }
 
 seedBlogs().catch(async (error) => {
-  logger.error('Blog seed failed', { error });
+  console.error('SEED BLOGS ERROR:', error);
+  logger.error('Blog seed failed', { error: error?.message || error });
   try {
     await disconnectDatabase();
   } catch {
