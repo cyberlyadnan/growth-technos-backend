@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
     "seed:blogs": "ts-node -r tsconfig-paths/register src/scripts/seed-blogs.ts",
+    "blog:publish": "ts-node -r tsconfig-paths/register src/scripts/publish-blog.ts",
     "seed:services-portfolio": "ts-node -r tsconfig-paths/register src/scripts/seed-services-portfolio.ts",
     "seed:industries": "ts-node -r tsconfig-paths/register src/scripts/seed-industries.ts",
     "seed:lead-gen": "ts-node -r tsconfig-paths/register src/scripts/seed-lead-gen.ts",

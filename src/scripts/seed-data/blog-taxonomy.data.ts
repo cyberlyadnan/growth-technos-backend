@@ -74,6 +74,12 @@ export const BLOG_INDUSTRIES = [
     icon: 'shopping-cart',
   },
   {
+    slug: 'real-estate',
+    name: 'Real Estate & Builders',
+    description: 'Builders, property developers, real estate agencies, and channel partners.',
+    icon: 'home',
+  },
+  {
     slug: 'general',
     name: 'General',
     description: 'Cross-industry insights for small and mid-sized businesses.',
@@ -146,4 +152,7 @@ export const BLOG_TAGS = [
   { slug: 'school-software', name: 'School Software', color: '#0369a1' },
   { slug: 'ecommerce', name: 'E-commerce', color: '#f59e0b' },
   { slug: 'marketplace', name: 'Marketplace', color: '#8b5cf6' },
+  { slug: 'real-estate', name: 'Real Estate', color: '#10b981' },
+  { slug: 'tally', name: 'Tally Integration', color: '#0284c7' },
+  { slug: 'maintenance', name: 'Software Maintenance', color: '#6366f1' },
 ];
