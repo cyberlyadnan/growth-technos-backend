@@ -154,6 +154,8 @@ export type BlogPostSeed = {
   viewCount: number;
   likeCount: number;
   difficultyLevel: BlogDifficultyLevel;
+  publicationStatus?: BlogPublicationStatus;
+  scheduledPublishAt?: Date;
   publishedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -230,7 +232,8 @@ export async function upsertBlog(
     author: refs.authorId,
     readingTimeMinutes,
     difficultyLevel: seed.difficultyLevel,
-    publicationStatus: BlogPublicationStatus.PUBLISHED,
+    publicationStatus: seed.publicationStatus || BlogPublicationStatus.PUBLISHED,
+    scheduledPublishAt: seed.scheduledPublishAt || undefined,
     publishedAt: seed.publishedAt,
     isFeatured: seed.isFeatured,
     isPinned: seed.isPinned,
@@ -281,6 +284,6 @@ export async function upsertBlog(
     return { id: existing.id, slug: seed.slug, created: false };
   }
 
-  const created = await Blog.create(payload);
-  return { id: created.id, slug: seed.slug, created: true };
+  const created = (await Blog.create(payload as any)) as any;
+  return { id: created.id || created._id.toString(), slug: seed.slug, created: true };
 }

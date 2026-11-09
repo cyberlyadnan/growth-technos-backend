@@ -63,7 +63,13 @@ export class BlogRepository {
     }
 
     if (options.publishedOnly) {
-      filter.publicationStatus = BlogPublicationStatus.PUBLISHED;
+      filter.$or = [
+        { publicationStatus: BlogPublicationStatus.PUBLISHED },
+        {
+          publicationStatus: BlogPublicationStatus.SCHEDULED,
+          scheduledPublishAt: { $lte: new Date() },
+        },
+      ];
       filter.isDeleted = { $ne: true };
     } else if (options.publicationStatus) {
       filter.publicationStatus = options.publicationStatus;
@@ -121,7 +127,13 @@ export class BlogRepository {
   async findBySlug(slug: string, publishedOnly = false): Promise<IBlog | null> {
     const filter: Record<string, unknown> = { slug: slug.toLowerCase() };
     if (publishedOnly) {
-      filter.publicationStatus = BlogPublicationStatus.PUBLISHED;
+      filter.$or = [
+        { publicationStatus: BlogPublicationStatus.PUBLISHED },
+        {
+          publicationStatus: BlogPublicationStatus.SCHEDULED,
+          scheduledPublishAt: { $lte: new Date() },
+        },
+      ];
     }
 
     return Blog.findOne(filter).populate(BLOG_POPULATE).exec();
@@ -129,7 +141,13 @@ export class BlogRepository {
 
   async findPublishedForFeeds(): Promise<IBlog[]> {
     return Blog.find({
-      publicationStatus: BlogPublicationStatus.PUBLISHED,
+      $or: [
+        { publicationStatus: BlogPublicationStatus.PUBLISHED },
+        {
+          publicationStatus: BlogPublicationStatus.SCHEDULED,
+          scheduledPublishAt: { $lte: new Date() },
+        },
+      ],
       isDeleted: { $ne: true },
     })
       .select(

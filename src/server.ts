@@ -14,6 +14,12 @@ async function bootstrap(): Promise<void> {
   );
   startRenewalReminderScheduler();
 
+  const blogScheduler = setInterval(() => {
+    import('@modules/blogs/service/blog.service')
+      .then(({ blogService }) => blogService.publishScheduledBlogs())
+      .catch((err) => logger.error('Error in blog publication scheduler', { err }));
+  }, 60000);
+
   const server = app.listen(env.PORT, () => {
     logger.info(`🚀 ${env.APP_NAME} API running`, {
       port: env.PORT,
@@ -25,6 +31,7 @@ async function bootstrap(): Promise<void> {
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received — shutting down gracefully`);
+    clearInterval(blogScheduler);
     server.close(() => {
       logger.info('HTTP server closed');
       process.exit(0);

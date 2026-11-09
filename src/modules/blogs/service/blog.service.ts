@@ -892,6 +892,31 @@ export class BlogService {
     }
     return { affected };
   }
+
+  async publishScheduledBlogs(): Promise<number> {
+    const now = new Date();
+    const scheduledBlogs = await Blog.find({
+      publicationStatus: BlogPublicationStatus.SCHEDULED,
+      scheduledPublishAt: { $lte: now },
+      isDeleted: { $ne: true },
+    });
+
+    if (scheduledBlogs.length === 0) return 0;
+
+    for (const blog of scheduledBlogs) {
+      blog.publicationStatus = BlogPublicationStatus.PUBLISHED;
+      if (!blog.publishedAt) {
+        blog.publishedAt = blog.scheduledPublishAt || now;
+      }
+      await blog.save();
+      revalidateBlogContent(blog.slug);
+    }
+
+    loggers.admin.info(
+      `[BlogScheduler] Auto-published ${scheduledBlogs.length} scheduled blogs at ${now.toISOString()}`,
+    );
+    return scheduledBlogs.length;
+  }
 }
 
 export const blogService = new BlogService();

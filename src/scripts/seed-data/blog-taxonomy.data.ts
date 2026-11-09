@@ -62,6 +62,18 @@ export const BLOG_INDUSTRIES = [
     icon: 'factory',
   },
   {
+    slug: 'education',
+    name: 'Education & Schools',
+    description: 'Private schools, academies, institutes and coaching centers.',
+    icon: 'graduation-cap',
+  },
+  {
+    slug: 'ecommerce',
+    name: 'E-commerce & Marketplaces',
+    description: 'Multi-vendor marketplaces, D2C platforms, and online stores.',
+    icon: 'shopping-cart',
+  },
+  {
     slug: 'general',
     name: 'General',
     description: 'Cross-industry insights for small and mid-sized businesses.',
@@ -129,4 +141,9 @@ export const BLOG_TAGS = [
   { slug: 'mvp', name: 'MVP Development', color: '#8b5cf6' },
   { slug: 'software-cost', name: 'Software Cost', color: '#059669' },
   { slug: 'startup', name: 'Startup', color: '#ec4899' },
+  { slug: 'manufacturing', name: 'Manufacturing', color: '#64748b' },
+  { slug: 'education', name: 'Education', color: '#0284c7' },
+  { slug: 'school-software', name: 'School Software', color: '#0369a1' },
+  { slug: 'ecommerce', name: 'E-commerce', color: '#f59e0b' },
+  { slug: 'marketplace', name: 'Marketplace', color: '#8b5cf6' },
 ];
