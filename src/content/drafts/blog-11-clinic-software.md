@@ -97,3 +97,4 @@ It can be, if access is role-based, logins are personal, data is backed up and e
 
 **How much does clinic management software cost?**
 Ready-made tools usually charge monthly or yearly. Custom systems with us start at ₹30,000 for booking, reminders and a patient CRM.
+

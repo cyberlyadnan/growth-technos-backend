@@ -2,11 +2,9 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { Types } from 'mongoose';
+import { revalidateBlogContent } from '@core/revalidation/frontend-revalidation';
 import { connectDatabase, disconnectDatabase } from '@core/database/connection';
-import {
-  BlogDifficultyLevel,
-  BlogPublicationStatus,
-} from '@core/constants';
+import { BlogDifficultyLevel, BlogPublicationStatus } from '@core/constants';
 import {
   upsertAuthor,
   upsertCategory,
@@ -49,7 +47,10 @@ function parseFrontmatter(content: string): { metadata: Record<string, any>; bod
     const key = line.slice(0, colonIndex).trim();
     let value = line.slice(colonIndex + 1).trim();
 
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
 
@@ -192,9 +193,6 @@ function markdownToHtml(md: string): {
   flushFaq();
 
   let fullHtml = htmlParts.join('\n');
-  if (fullHtml.includes('<h2 id="faqs">')) {
-    fullHtml = fullHtml.replace('<h2 id="faqs">', `${CTA_BLOCK}\n\n<h2 id="faqs">`);
-  }
   fullHtml += `\n\n${CTA_BLOCK}`;
 
   return { html: fullHtml.trim(), tableOfContents, faqSchema };
@@ -230,11 +228,19 @@ export async function publishBlogFromMarkdown(
 
   const { html, tableOfContents, faqSchema } = markdownToHtml(body);
 
-  const excerpt = metadata.metaDescription || metadata.excerpt || body.slice(0, 160).replace(/[#*_-]/g, '').trim();
+  const excerpt =
+    metadata.metaDescription ||
+    metadata.excerpt ||
+    body
+      .slice(0, 160)
+      .replace(/[#*_-]/g, '')
+      .trim();
   const summary = metadata.summary || excerpt;
   const isScheduled = Boolean(metadata.scheduledPublishAt);
   const scheduledPublishAt = isScheduled ? new Date(metadata.scheduledPublishAt) : undefined;
-  const publicationStatus = isScheduled ? BlogPublicationStatus.SCHEDULED : BlogPublicationStatus.PUBLISHED;
+  const publicationStatus = isScheduled
+    ? BlogPublicationStatus.SCHEDULED
+    : BlogPublicationStatus.PUBLISHED;
   const publishedAt = scheduledPublishAt || new Date();
 
   const blogSeed: BlogPostSeed = {
@@ -257,9 +263,10 @@ export async function publishBlogFromMarkdown(
     isPinned: metadata.isPinned ?? false,
     isTrending: metadata.isTrending ?? false,
     allowComments: true,
-    viewCount: 150,
-    likeCount: 25,
-    difficultyLevel: (metadata.difficultyLevel as BlogDifficultyLevel) || BlogDifficultyLevel.INTERMEDIATE,
+    viewCount: 0,
+    likeCount: 0,
+    difficultyLevel:
+      (metadata.difficultyLevel as BlogDifficultyLevel) || BlogDifficultyLevel.INTERMEDIATE,
     publicationStatus,
     scheduledPublishAt,
     publishedAt,
@@ -270,9 +277,15 @@ export async function publishBlogFromMarkdown(
     html,
   };
 
-  const categoryId = taxonomies.categoryIds.get(blogSeed.categorySlug) || Array.from(taxonomies.categoryIds.values())[0];
-  const topicClusterId = taxonomies.topicClusterIds.get(blogSeed.topicClusterSlug) || Array.from(taxonomies.topicClusterIds.values())[0];
-  const industryId = taxonomies.industryIds.get(blogSeed.industrySlug) || Array.from(taxonomies.industryIds.values())[0];
+  const categoryId =
+    taxonomies.categoryIds.get(blogSeed.categorySlug) ||
+    Array.from(taxonomies.categoryIds.values())[0];
+  const topicClusterId =
+    taxonomies.topicClusterIds.get(blogSeed.topicClusterSlug) ||
+    Array.from(taxonomies.topicClusterIds.values())[0];
+  const industryId =
+    taxonomies.industryIds.get(blogSeed.industrySlug) ||
+    Array.from(taxonomies.industryIds.values())[0];
   const tagIds = blogSeed.tagSlugs
     .map((slug) => taxonomies.tagIds.get(slug))
     .filter(Boolean) as Types.ObjectId[];
@@ -285,12 +298,21 @@ export async function publishBlogFromMarkdown(
     industryId,
   });
 
+  await revalidateBlogContent(blogSeed.slug);
+
   console.log(`✓ MongoDB upsert success: ${result.slug} (Created: ${result.created})`);
-  console.log(`  Status: ${publicationStatus} | Scheduled: ${scheduledPublishAt?.toISOString() || 'Live Immediately'}`);
-  console.log(`  Table of Contents: ${tableOfContents.length} headings | FAQs: ${faqSchema.length}`);
+  console.log(
+    `  Status: ${publicationStatus} | Scheduled: ${scheduledPublishAt?.toISOString() || 'Live Immediately'}`,
+  );
+  console.log(
+    `  Table of Contents: ${tableOfContents.length} headings | FAQs: ${faqSchema.length}`,
+  );
 
   // Sync with Frontend blogs.json
-  const smartJsonPath = path.resolve(__dirname, '../../../growth-technos-smart/src/content/blogs/blogs.json');
+  const smartJsonPath = path.resolve(
+    __dirname,
+    '../../../growth-technos-smart/src/content/blogs/blogs.json',
+  );
   if (fs.existsSync(smartJsonPath)) {
     const blogsJson = JSON.parse(fs.readFileSync(smartJsonPath, 'utf8'));
     const existingIndex = blogsJson.findIndex((b: any) => b.slug === blogSeed.slug);
@@ -347,7 +369,10 @@ async function main() {
       console.log('No drafts directory found at', draftsDir);
       return;
     }
-    const files = fs.readdirSync(draftsDir).filter((f) => f.endsWith('.md')).sort();
+    const files = fs
+      .readdirSync(draftsDir)
+      .filter((f) => f.endsWith('.md'))
+      .sort();
     console.log(`Found ${files.length} drafts in ${draftsDir}`);
     for (const file of files) {
       await publishBlogFromMarkdown(path.join(draftsDir, file), taxonomies);

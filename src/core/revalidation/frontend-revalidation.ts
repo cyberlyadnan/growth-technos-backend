@@ -18,30 +18,36 @@ type RevalidationPayload = {
   paths?: string[];
 };
 
-function triggerFrontendRevalidation(payload: RevalidationPayload): void {
+async function triggerFrontendRevalidation(payload: RevalidationPayload): Promise<void> {
   const url = process.env.FRONTEND_REVALIDATE_URL;
   const secret = process.env.REVALIDATION_SECRET;
 
   if (!url || !secret) return;
 
-  void fetch(url, {
+  await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${secret}`,
     },
     body: JSON.stringify(payload),
-  }).catch((error) => {
-    loggers.api.warn('Frontend cache revalidation failed', {
-      error: error instanceof Error ? error.message : String(error),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Revalidation returned HTTP ${response.status}`);
+    })
+    .catch((error) => {
+      loggers.api.warn('Frontend cache revalidation failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
-  });
 }
 
-export function revalidateBlogContent(slug?: string): void {
-  triggerFrontendRevalidation({
+export function revalidateBlogContent(slug?: string): Promise<void> {
+  return triggerFrontendRevalidation({
     tags: [REVALIDATION_TAGS.blogFeeds, REVALIDATION_TAGS.blogTaxonomy],
-    paths: slug ? ['/', '/blog', `/blog/${slug}`] : ['/', '/blog'],
+    paths: slug
+      ? ['/', '/blog', '/sitemap.xml', '/blog/rss.xml', `/blog/${slug}`]
+      : ['/', '/blog', '/sitemap.xml', '/blog/rss.xml'],
   });
 }
 

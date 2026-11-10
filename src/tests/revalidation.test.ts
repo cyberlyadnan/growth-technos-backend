@@ -48,7 +48,7 @@ describe('Frontend revalidation triggers', () => {
         }),
         body: JSON.stringify({
           tags: [REVALIDATION_TAGS.blogFeeds, REVALIDATION_TAGS.blogTaxonomy],
-          paths: ['/', '/blog', '/blog/launch-post'],
+          paths: ['/', '/blog', '/sitemap.xml', '/blog/rss.xml', '/blog/launch-post'],
         }),
       }),
     );

@@ -19,6 +19,7 @@ process.env.RATE_LIMIT_WINDOW_MS = '60000';
 process.env.RATE_LIMIT_MAX_REQUESTS = '10000';
 process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = '1000';
 process.env.LOG_LEVEL = 'error';
+process.env.LOG_FORMAT = 'dev';
 process.env.SWAGGER_ENABLED = 'false';
 process.env.BCRYPT_SALT_ROUNDS = '10';
 process.env.STORAGE_PROVIDER = 'local';

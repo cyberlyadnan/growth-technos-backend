@@ -92,3 +92,4 @@ Yes. A partner portal lets brokers register clients, track status and see commis
 
 **How much does a real estate CRM cost?**
 A focused lead CRM starts at ₹30,000 with us. Full systems with inventory, partner portals and apps cost more depending on scope.
+

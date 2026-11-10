@@ -80,6 +80,12 @@ export const BLOG_INDUSTRIES = [
     icon: 'home',
   },
   {
+    slug: 'printing-ecommerce',
+    name: 'Printing & Packaging',
+    description: 'Commercial printing presses, digital printers, packaging units and e-commerce stores.',
+    icon: 'printer',
+  },
+  {
     slug: 'general',
     name: 'General',
     description: 'Cross-industry insights for small and mid-sized businesses.',
@@ -155,4 +161,15 @@ export const BLOG_TAGS = [
   { slug: 'real-estate', name: 'Real Estate', color: '#10b981' },
   { slug: 'tally', name: 'Tally Integration', color: '#0284c7' },
   { slug: 'maintenance', name: 'Software Maintenance', color: '#6366f1' },
+  { slug: 'delhi-ncr', name: 'Delhi NCR', color: '#dc2626' },
+  { slug: 'software-requirements', name: 'Software Requirements', color: '#4b5563' },
+  { slug: 'distributor-management', name: 'Distributor Management', color: '#2563eb' },
+  { slug: 'production-tracking', name: 'Production Tracking', color: '#059669' },
+  { slug: 'field-sales', name: 'Field Sales', color: '#d97706' },
+  { slug: 'printing', name: 'Printing Press', color: '#7c3aed' },
+  { slug: 'payroll', name: 'Payroll Software', color: '#0891b2' },
+  { slug: 'attendance', name: 'Attendance System', color: '#4f46e5' },
+  { slug: 'coaching', name: 'Coaching Institute', color: '#0284c7' },
+  { slug: 'shopify', name: 'Shopify', color: '#16a34a' },
+  { slug: 'ai-automation', name: 'AI Automation', color: '#8b5cf6' },
 ];

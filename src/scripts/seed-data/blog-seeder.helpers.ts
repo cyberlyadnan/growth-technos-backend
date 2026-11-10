@@ -1,9 +1,5 @@
 import { Types } from 'mongoose';
-import {
-  BlogContentFormat,
-  BlogDifficultyLevel,
-  BlogPublicationStatus,
-} from '@core/constants';
+import { BlogContentFormat, BlogDifficultyLevel, BlogPublicationStatus } from '@core/constants';
 import { calculateBlogSeoScore } from '@core/utils/blog-seo-score';
 import { calculateReadingTimeMinutes, stripHtml } from '@core/utils/reading-time';
 import { sanitizeBlogHtml } from '@core/utils/sanitize-html';
@@ -15,7 +11,10 @@ import { Tag } from '@modules/tags/model/tag.model';
 import { TopicCluster } from '@modules/topic-clusters/model/topic-cluster.model';
 import type { ITableOfContentsItem } from '@core/schemas/blog-seo.schema';
 
-export const SITE_URL = (process.env.PUBLIC_SITE_URL ?? 'https://www.growthtechnos.com').replace(/\/$/, '');
+export const SITE_URL = (process.env.PUBLIC_SITE_URL ?? 'https://www.growthtechnos.com').replace(
+  /\/$/,
+  '',
+);
 export const UPLOAD_PREFIX = process.env.BLOG_UPLOAD_URL_PREFIX ?? '/uploads/blogs';
 
 export function blogImagePath(filename: string): string {
@@ -30,9 +29,10 @@ export function blogOgImage(filename: string): string {
   return `${SITE_URL}${blogImagePath(filename)}`;
 }
 
-function clampText(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1).trim()}…`;
+/** Overlong overrides use the complete editorial fallback instead of clipping words. */
+export function completeSeoOverride(value: string, limit: number): string {
+  const text = value.trim();
+  return text.length <= limit && !/(?:…|\.\.\.)$/.test(text) ? text : '';
 }
 
 type TaxonomySeed = {
@@ -239,11 +239,11 @@ export async function upsertBlog(
     isPinned: seed.isPinned,
     isTrending: seed.isTrending,
     allowComments: seed.allowComments,
-    viewCount: seed.viewCount,
-    likeCount: seed.likeCount,
+    viewCount: 0,
+    likeCount: 0,
     tableOfContents: seed.tableOfContents,
-    metaTitle: clampText(seed.metaTitle, 70),
-    metaDescription: clampText(seed.metaDescription, 160),
+    metaTitle: completeSeoOverride(seed.metaTitle, 70),
+    metaDescription: completeSeoOverride(seed.metaDescription, 160),
     metaKeywords: seed.metaKeywords,
     canonical: canonicalUrl,
     canonicalUrl,
@@ -276,7 +276,12 @@ export async function upsertBlog(
   const existing = await Blog.findOne({ slug: seed.slug, isDeleted: { $ne: true } });
 
   if (existing) {
-    const { createdAt: _createdAt, ...updatePayload } = payload;
+    const {
+      createdAt: _createdAt,
+      viewCount: _viewCount,
+      likeCount: _likeCount,
+      ...updatePayload
+    } = payload;
     await Blog.updateOne(
       { _id: existing._id },
       { $set: { ...updatePayload, updatedAt: seed.updatedAt } },

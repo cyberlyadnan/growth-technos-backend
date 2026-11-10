@@ -100,3 +100,4 @@ Yes. We start with a handover and code review, take full backups, fix urgent iss
 
 **Do I need maintenance if my website is working fine?**
 Yes. Most problems, especially security issues, build up quietly. Regular updates and backups prevent expensive emergencies later.
+

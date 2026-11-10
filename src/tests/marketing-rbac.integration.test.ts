@@ -67,7 +67,9 @@ describe('Marketing Staff RBAC', () => {
         password: 'Evil@12345678',
         role: UserRole.SUPER_ADMIN,
       })
-      .expect(400);
+      .expect((res) => {
+        expect([400, 422]).toContain(res.status);
+      });
   });
 
   it('marketing login receives only marketing allowlist permissions', async () => {

@@ -98,3 +98,4 @@ Yes. TallyPrime supports XML-based data exchange that custom software can use fo
 
 **Can I see Tally outstanding balances in my CRM?**
 Yes. Outstanding balances can be pulled from Tally so your sales team sees them before taking new orders.
+
